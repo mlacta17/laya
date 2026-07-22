@@ -1,0 +1,29 @@
+// Worker configuration for both environments (ADR-132: fully separate
+// Workers, D1 databases, hostnames and secrets; the mock issuer exists only
+// in dev). Top-level config IS the dev environment; `--env production`
+// selects the production block. Wrangler does not inherit `vars` into named
+// environments, so each environment states its variables explicitly.
+//
+// D1 bindings are added in the next step of Phase 0A, when the databases are
+// created (laya-dev / production per ADR-132).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "laya-api-dev",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "vars": {
+    "ENVIRONMENT": "development"
+  },
+  "env": {
+    // Production: deployed from Phase 0A with NO issuer configured — every
+    // authenticated request 401s until Phase 0B selects the real provider
+    // (ADR-134). Never add mock-issuer audience, JWKS URL or key here
+    // (ADR-132).
+    "production": {
+      "name": "laya-api",
+      "vars": {
+        "ENVIRONMENT": "production"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+# Local-only Worker variables. Copy to .dev.vars (gitignored) — Wrangler
+# loads it automatically for `wrangler dev`. Never commit real secrets
+# (CLAUDE.md hard rules).
+#
+# No secrets are required yet. Mock-issuer variables (audience, JWKS URL)
+# arrive with the auth step of Phase 0A and are documented here when they do.
