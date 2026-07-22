@@ -1,6 +1,6 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.2 D1 baseline · July 22, 2026*
+*Private streaming platform · v1.3 D1 baseline · July 22, 2026*
 *This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, progress keyed to a provider video asset, or browser subtitle extraction as already proven as a current decision, it is stale. Companion: DESIGN.md v0.2 (design program, phases D0–D5).*
 
 ---
@@ -488,6 +488,8 @@ Reversed and superseded decisions remain in the register because the reasoning t
 | **ADR-129** | D1 schema conventions: `STRICT`, UUIDv7 `TEXT`, millisecond `INTEGER` timestamps | Accepted | One predictable SQLite-compatible representation replaces PostgreSQL-specific types and defaults. |
 | **ADR-130** | D1 Time Travel plus scheduled logical exports | Accepted | Point-in-time recovery is operational protection; owner-controlled exports provide portability and retention beyond the platform window. |
 | **ADR-131** | D1 read replication deferred until measured | Accepted | Eastern North America primary hint first; Philippine read acceleration requires Sessions API/bookmarks and is added only after latency evidence. |
+| **ADR-132** | Strict dev/production environment separation | Accepted | Separate Worker, D1 database, hostname and secrets per environment (`laya-api-dev`/`laya-dev` vs production). The mock JWT issuer exists only in development configuration; production must be structurally unable to validate a mock-issuer token (no mock audience, JWKS URL or key in its config). Acceptance-tested from Phase 0A onward. |
+| **ADR-133** | Lean catalog surface: search = titles + genres; limited cast from cached TMDB metadata; no people/credits tables; no user-visible "versions" | Accepted | The design's people-search and cast-browsing implied `people`/`title_credits` tables the data model never defined. MVP: search covers titles and genres; title pages show limited cast read from cached metadata; person pages/filters deferred until demonstrated demand. Provider encodes are never user-visible (ADR-121); if editorial variants (director's cut) ever matter, they become an explicit `editions` domain concept via a new ADR — not exposed provider assets. |
 
 ---
 
@@ -627,8 +629,9 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.0.1 | Jul 22, 2026 | Reissued under the master filename; stale Jellyfin-era premises removed from companion design references. |
 | **v1.1** | **Jul 22, 2026** | **Principal-engineering review applied:** Hyperdrive/least-privilege DB boundary, stable playables, provisional subtitle spike, provider caption-key gate, TMDB cache/attribution rules, offline expiry semantics, reproducible cost scenarios, invitation/API conventions, local-development contract and production upgrade gate. |
 | **v1.2** | **Jul 22, 2026** | **D1 architecture adopted:** Supabase Postgres/Hyperdrive removed; native D1 binding, SQLite `STRICT` conventions, D1 recovery/export plan and read-replication trigger added; managed authentication separated into a Phase 0B provider decision; production costs reduced and recalculated. |
-| v1.2.2 | Jul 22, 2026 | **Project named: Laya** (§13.9 closed; domain still open). Codename "Sine" retired throughout. |
 | v1.2.1 | Jul 22, 2026 | **Fork reconciliation + review.** Two v1.1 revisions existed in parallel: v1.1-A (chat branch: D1 + self-hosted Better Auth, growth cost table) and v1.1-B (this lineage: playables, spikes, provider gates, reproducible scenarios). v1.2 is confirmed as canonical — it independently converged on D1 and additionally corrected three v1.1-A defects (unbenchmarked subtitle-extraction claims → ADR-122 spike; caption-purge asserted from a third-party client doc → demoted to §13.4 gate; container escape hatch lacking source access → re-upload flow in ADR-113). Reconciliation adds: §11.5 user-count scenarios, ADR-127 branch note on the Better Auth option, and this row. All v1.2 cost arithmetic and D1 allowance claims re-verified. |
+| v1.2.2 | Jul 22, 2026 | **Project named: Laya** (§13.9 closed; domain still open). Codename "Sine" retired throughout. |
+| v1.3 | Jul 22, 2026 | **Synchronized release after external documentation review.** ADR-132 (dev/prod isolation; mock issuer never in production) and ADR-133 (lean catalog surface) added. DESIGN.md reconciled to v0.3 (v1.2-era decisions propagated: provider-neutral onboarding, ADR-121/122 language, phase remapping, metered-storage operator metrics, virus-scan claim removed). Brief bumped to v1.1 with environment isolation, precise ping-store semantics, expanded JWT rejection matrix, env/secret file requirements, static quality gates, and archive-on-completion. Docs governance: briefs live in `docs/phases/active|completed/`; `docs/README.md` reading path and glossary added. |
 
 ---
 
