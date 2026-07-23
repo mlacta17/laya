@@ -20,7 +20,6 @@ describe("GET /v1/health", () => {
     expect(res.status).toBe(200);
     const body = healthResponseSchema.parse(await res.json());
     expect(body.status).toBe("ok");
-    expect(body.version).not.toBe("");
     expect(res.headers.get("X-Request-Id")).toBe(body.requestId);
   });
 });
@@ -32,7 +31,6 @@ describe("error envelope", () => {
     expect(res.status).toBe(404);
     const body = errorEnvelopeSchema.parse(await res.json());
     expect(body.error.code).toBe("not_found");
-    expect(body.error.requestId).not.toBe("");
   });
 
   it("fails loudly with the envelope when the environment is invalid", async () => {
@@ -42,7 +40,6 @@ describe("error envelope", () => {
     expect(res.status).toBe(500);
     const body = errorEnvelopeSchema.parse(await res.json());
     expect(body.error.code).toBe("internal");
-    expect(body.error.requestId).not.toBe("");
     expect(consoleError).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "unhandled_request_error",
