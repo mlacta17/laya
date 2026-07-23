@@ -6,14 +6,12 @@ import {
   MOCK_JWKS_JSON,
   MOCK_PUBLIC_JWK,
 } from "../dev/mock-issuer/keys";
-import { getAuthConfig } from "../src/auth/config";
 import {
   clearJwksCache,
   getSigningKeys,
   JwksFetchError,
 } from "../src/auth/jwks";
 import { verifyAccessToken } from "../src/auth/verify-token";
-import { validateEnv } from "../src/env";
 import app from "../src/index";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
 import { ROGUE_PRIVATE_JWK } from "./helpers/rogue-key";
@@ -138,8 +136,8 @@ describe("JWT rejection matrix", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("rejects when the JWKS fetch fails", async () => {
-    silenceWarn();
+  it("rejects when the JWKS fetch fails, logging the outage detail", async () => {
+    const warn = silenceWarn();
     // Real-provider path: keys come from a URL, and that fetch breaks.
     const env = {
       ...devEnv,
@@ -152,6 +150,16 @@ describe("JWT rejection matrix", () => {
     );
     const token = await mintToken();
     await expectUnauthorized(await requestWithAuth(`Bearer ${token}`, env));
+
+    // The client sees only the generic 401, but the structured log carries
+    // the JwksFetchError detail an operator needs during a provider outage.
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "auth_rejected",
+        reason: "JwksFetchError",
+        detail: expect.stringContaining("connection refused"),
+      }),
+    );
   });
 
   it("rejects everything when auth is not configured (production until 0B, ADR-134)", async () => {
@@ -162,23 +170,8 @@ describe("JWT rejection matrix", () => {
   });
 });
 
-describe("inline JWKS configuration", () => {
-  const configWith = (mockJwks: string) =>
-    validateEnv({
-      ENVIRONMENT: "development",
-      AUTH_ISSUER: MOCK_ISSUER,
-      AUTH_AUDIENCE: MOCK_AUDIENCE,
-      MOCK_JWKS: mockJwks,
-    });
-
-  it.each([
-    ["invalid JSON", "not-json"],
-    ["an empty key set", '{"keys":[]}'],
-    ["a key without kty", '{"keys":[{"kid":"missing-kty"}]}'],
-  ])("rejects %s", (_case, mockJwks) => {
-    expect(() => getAuthConfig(configWith(mockJwks))).toThrow();
-  });
-});
+// Malformed MOCK_JWKS is a startup error — those cases live in env.test.ts
+// with the rest of the environment validation.
 
 describe("JWKS fetch and cache (real-provider path)", () => {
   const url = "https://provider.example/jwks.json";

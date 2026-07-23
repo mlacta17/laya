@@ -20,14 +20,31 @@ describe("Worker environment validation", () => {
     );
   });
 
-  it("accepts the dev mock-issuer configuration", () => {
+  it("accepts the dev mock-issuer configuration and parses MOCK_JWKS", () => {
     const env = validateEnv({
       ENVIRONMENT: "development",
       AUTH_ISSUER: "https://mock-issuer.laya.invalid",
       AUTH_AUDIENCE: "laya-api-dev",
       MOCK_JWKS: '{"keys":[{"kid":"mock","kty":"RSA"}]}',
     });
-    expect(env.MOCK_JWKS).toContain('"kid":"mock"');
+    expect(env.MOCK_JWKS?.keys[0]?.kid).toBe("mock");
+  });
+
+  // A broken JWKS fixture is a startup error (loud 500), never a stream of
+  // unexplained 401s — the shape check lives in the env schema itself.
+  it.each([
+    ["invalid JSON", "not-json"],
+    ["an empty key set", '{"keys":[]}'],
+    ["a key without kty", '{"keys":[{"kid":"missing-kty"}]}'],
+  ])("rejects MOCK_JWKS that is %s", (_case, mockJwks) => {
+    expect(() =>
+      validateEnv({
+        ENVIRONMENT: "development",
+        AUTH_ISSUER: "https://mock-issuer.laya.invalid",
+        AUTH_AUDIENCE: "laya-api-dev",
+        MOCK_JWKS: mockJwks,
+      }),
+    ).toThrow("Invalid Worker environment configuration");
   });
 
   it("accepts a complete URL-backed development configuration", () => {
