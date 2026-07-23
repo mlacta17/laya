@@ -9,22 +9,30 @@ on:
   push:
     branches: [main]
 
-# A newer push to the same branch supersedes the running build.
+# The workflow only needs repository contents. Deployment authentication uses
+# narrowly scoped Cloudflare secrets rather than the GitHub token.
+permissions:
+  contents: read
+
+# Superseded PR checks can stop immediately. Main runs must finish so a newer
+# push cannot interrupt a migration/deploy transition; at most the latest
+# pending main run is retained by GitHub's concurrency queue.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Full commit SHAs are immutable; version comments keep updates readable.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # pnpm/action-setup reads the pinned version from package.json's
       # packageManager field; keep node-version in sync with .npmrc's
       # use-node-version, which is the authority for local development.
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.18.0
           cache: pnpm
@@ -54,7 +62,7 @@ jobs:
       # database — the runner has no prior .wrangler state, so this is a
       # genuinely fresh D1 through Wrangler's real CLI path.
       - name: Migration check (fresh local D1)
-        run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --local
+        run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --local --env=""
 
       - name: Build web
         run: pnpm --filter @laya/web build
@@ -66,7 +74,7 @@ jobs:
       # even though production is never auto-deployed.
       - name: Validate Worker deploy (dry run, both environments)
         run: |
-          pnpm --filter @laya/api exec wrangler deploy --dry-run
+          pnpm --filter @laya/api exec wrangler deploy --dry-run --env=""
           pnpm --filter @laya/api exec wrangler deploy --dry-run --env production
 
   deploy-dev:
@@ -74,9 +82,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.18.0
           cache: pnpm
@@ -85,7 +93,7 @@ jobs:
 
       # Additive migrations run before the code that expects them.
       - name: Apply D1 migrations (remote dev database)
-        run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --remote
+        run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --remote --env=""
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
