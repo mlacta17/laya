@@ -12,7 +12,7 @@ export function errorResponse(
   message: string,
 ) {
   const body: ErrorEnvelope = {
-    error: { code, message, requestId: c.get("requestId") ?? "" },
+    error: { code, message, requestId: c.get("requestId") },
   };
   return c.json(body, status);
 }

@@ -1,7 +1,5 @@
 # Laya documentation — reading guide
 
-*Place this file at `docs/README.md`.*
-
 You do not need to read everything to contribute. Read what your task needs, in this order:
 
 1. **Root `README.md`** — what Laya is and the project quickstart.
