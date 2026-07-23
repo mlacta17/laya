@@ -1,0 +1,19 @@
+// A second RSA private key carrying the SAME kid as the mock issuer's real
+// key. Tokens signed with it pass kid lookup but fail signature verification
+// — the "invalid signature" case of the rejection matrix. Test-only.
+import { MOCK_KID } from "../../dev/mock-issuer/keys";
+
+export const ROGUE_PRIVATE_JWK = {
+  kty: "RSA",
+  n: "upY_wjvrJLWem8P_nXv_SH52DvOSKMjP1zSLQyTX7FwhRoIPZJaCZ9tCnK2qlP1D4UFPdDP2LO729Ws35TLvKRi5JyElGOLLaumC83uDN_xy0UYdb73ooNikjN-YWDakDiZkfA5urxEEXoiFY3O19gEbLg0Q-1UxXKe_4RPQRqzcTWlh8Fao1ckZXw-MduP8GlIGHXaSN7pPOT-GjtgrhINXQNAxE7pLgcINZ0WEYSb037OAeRgN7kSiNdIESgPXN57BB1g_sgg-2nfTCBYyxxjp1_lYCa2OEYzZyxLhqM0TCNluTv7a4DjqPTU_Bu0sxEpksdij7AhxnROzrl_IWQ",
+  e: "AQAB",
+  d: "OC3qB50L6VMn7OWALtY5YIX3HPxYeyAveDARaEeNHdUFjdm2McahgAzECzG9BTwWdpm4BxhoHFJdGDrOqxuBaAHSKcZwiYQr1EZ3z8DWGwLPPVSbo1vuUZO5Q9NE5vaYwcvsgG_GAr8gbigz5WRfGrFtkhmMDeiyQqAdhXL2SHjaMYXE_dHSql3c1-HEu5isjmkjqlJ5pt85gz8gywksOhDQaw0B-az3BCjH8iYQea1NUmdUNFn9JJPWdKuFXDcRcEKKJdSrThV-EWCgCQeZVgD_dqbAiiNyGF_Z7eK7xf44egbhtqWPiLRx2QWMAFH--hTXYrU5vOrwhpf_w0H7Iw",
+  p: "9H35vyli8Q2za1TFY2-olRzA2cQLaiZvMrWrxcgow0uu_PutNHmL5w4jaasb2J9dIm7n_jFqa8ktGCXVQnAAyzwIty2V0snz5V7-9i7b0SzczxRf-4qBhI2hZCPfN-jR9l-llumFlH1CS1duCjulUnjA9jtbGnU6AvZr_AldvIs",
+  q: "w16KfaikTPmAHk2qjVJh4uLzCbreCzq514Vq5h5Gvw6h8bfcywwq13XVlMILz43lrRtMKM_vx2kUdtKXJ5s6O_K2ZUh_UXA2mQCamFBctgAZOcTSgC6OBENsL3abfPS2PGW_nxjwetQeYkQpcQGCkSfk-sVV4_3QIesuU3QF9ys",
+  dp: "USMBX7wnVqHaWhMu0ln600lQgrQ5qYeJvYVmtONBC9axAsmu6Ewx7oLVo7qiKhhw-v1dRhE2JQEFUw8zH7I1wTxyFAAvyV018He_Gwnf7yH5QUucssh7RPcPiUESUeaUzzNcq6FhsC6FcqVYIlM7AQyL1OtLx5MBpnwKyAB_uBM",
+  dq: "CQeUlQw3U8twTXY_fLqjBY6BtyBo5NH5BuoGr84UbP4rI_XggY31aPHsRizVyOkBBYguc_BwX6IOrRM8ozr8bQrhvTqlj8kE7PtnKcUFE_BbOh1LsVr1e2L2XBc6RoM07QOy4JKRgsvM_7OwyqVMOJNEdQar2pa_iOHKyVaic_M",
+  qi: "pSszCjUT4QRiC1Ub9Tao4U3uAXXgFtBbcUeyOya45WPZgre1uSrbyit3XgdFAWJLVTyOOF4zbpkNix5nuSnEwrI9pg8z3goexKbWj-eBgtIvWv0Sua9QWHdVkzxgFTW7Ldf6uzI-kUSCqD_BVt_KEWQ99w7fgn-5vl0AAjSqjFg",
+  alg: "RS256",
+  kid: MOCK_KID,
+  use: "sig",
+};
