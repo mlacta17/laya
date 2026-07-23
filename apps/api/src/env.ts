@@ -18,7 +18,8 @@ const envSchema = z
     //   MOCK_JWKS      — the mock issuer's public JWKS inline (dev only).
     //   AUTH_JWKS_URL  — the real provider's JWKS endpoint (Phase 0B).
     // MOCK_JWKS arrives as a JSON string var and is parsed and shape-checked
-    // right here, so a broken fixture is a startup error (500, loud) —
+    // here. The deployed entrypoint validates it at Worker module startup, so
+    // a broken fixture prevents the isolate from serving requests —
     // misconfiguration, never a bad request. Downstream code receives the
     // parsed document.
     MOCK_JWKS: z
@@ -92,6 +93,22 @@ const envSchema = z
   });
 
 export type ValidatedEnv = z.infer<typeof envSchema>;
+
+// The deployed entrypoint calls validateEnv directly at module startup. This
+// identity cache supports the in-process app used by tests, where many
+// independent bindings objects exercise one app instance.
+const validatedEnvCache = new WeakMap<object, ValidatedEnv>();
+
+export function getValidatedEnv(env: object): ValidatedEnv {
+  const cached = validatedEnvCache.get(env);
+  if (cached) {
+    return cached;
+  }
+
+  const validated = validateEnv(env);
+  validatedEnvCache.set(env, validated);
+  return validated;
+}
 
 export function validateEnv(env: unknown): ValidatedEnv {
   const result = envSchema.safeParse(env);

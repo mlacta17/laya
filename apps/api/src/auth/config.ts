@@ -13,7 +13,7 @@ export type AuthConfig = {
 // auth is not configured — production's state until Phase 0B (ADR-134), in
 // which case every authenticated request is rejected with 401. MOCK_JWKS is
 // already parsed and shape-checked by src/env.ts, so a broken fixture fails
-// at startup rather than here.
+// at Worker module startup rather than here.
 export function getAuthConfig(env: ValidatedEnv): AuthConfig | null {
   if (env.ENVIRONMENT === "production") {
     return null;

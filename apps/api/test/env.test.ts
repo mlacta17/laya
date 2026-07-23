@@ -1,11 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { validateEnv } from "../src/env";
+import { getValidatedEnv, validateEnv } from "../src/env";
 
 describe("Worker environment validation", () => {
   it("accepts production with no auth configuration", () => {
     expect(validateEnv({ ENVIRONMENT: "production" })).toEqual({
       ENVIRONMENT: "production",
     });
+  });
+
+  it("caches successful validation by bindings-object identity", () => {
+    const bindings = {
+      ENVIRONMENT: "development",
+      AUTH_ISSUER: "https://mock-issuer.laya.invalid",
+      AUTH_AUDIENCE: "laya-api-dev",
+      MOCK_JWKS: '{"keys":[{"kid":"mock","kty":"RSA"}]}',
+    };
+
+    expect(getValidatedEnv(bindings)).toBe(getValidatedEnv(bindings));
+    expect(getValidatedEnv({ ...bindings })).not.toBe(getValidatedEnv(bindings));
   });
 
   it("rejects a missing environment", () => {
@@ -30,8 +42,8 @@ describe("Worker environment validation", () => {
     expect(env.MOCK_JWKS?.keys[0]?.kid).toBe("mock");
   });
 
-  // A broken JWKS fixture is a startup error (loud 500), never a stream of
-  // unexplained 401s — the shape check lives in the env schema itself.
+  // A broken JWKS fixture is a startup error, never a stream of unexplained
+  // 401s — the shape check lives in the env schema itself.
   it.each([
     ["invalid JSON", "not-json"],
     ["an empty key set", '{"keys":[]}'],
