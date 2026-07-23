@@ -6,7 +6,7 @@ coverage/
 # Wrangler local state (local D1, cached builds)
 .wrangler/
 
-# Local secrets — never committed (see CLAUDE.md hard rules).
+# Local secrets — never committed (see AGENTS.md hard rules).
 # The committed *.example files document every required variable.
 .dev.vars
 .dev.vars.*
