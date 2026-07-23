@@ -19,14 +19,21 @@ import {
 // in a test is still safer than maintaining a partial parser that disagrees
 // with deployment. Vitest runs this package with apps/api as its working
 // directory.
+//
+// The declared return type references Node-only types this Workers-typed
+// package deliberately does not install, so TypeScript resolves it as an
+// error type (tsc hides that behind skipLibCheck; type-aware lint surfaces
+// it). Assert only the minimal shape these tests consume.
+type MinimalWranglerConfig = { vars: Record<string, unknown> };
+
 const devConfig = unstable_readConfig(
   { config: "wrangler.jsonc" },
   { hideWarnings: true },
-);
+) as MinimalWranglerConfig;
 const productionConfig = unstable_readConfig(
   { config: "wrangler.jsonc", env: "production" },
   { hideWarnings: true },
-);
+) as MinimalWranglerConfig;
 
 describe("wrangler.jsonc dev vars", () => {
   it("stays in sync with the committed mock-issuer fixture", () => {

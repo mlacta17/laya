@@ -53,5 +53,10 @@ function unauthorized(c: Context<AppEnv>, reason: string, detail?: string) {
     reason,
     ...(detail !== undefined && { detail }),
   });
-  return errorResponse(c, 401, "unauthorized", "Invalid or missing credentials");
+  return errorResponse(
+    c,
+    401,
+    "unauthorized",
+    "Invalid or missing credentials",
+  );
 }

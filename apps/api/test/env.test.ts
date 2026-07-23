@@ -17,7 +17,9 @@ describe("Worker environment validation", () => {
     };
 
     expect(getValidatedEnv(bindings)).toBe(getValidatedEnv(bindings));
-    expect(getValidatedEnv({ ...bindings })).not.toBe(getValidatedEnv(bindings));
+    expect(getValidatedEnv({ ...bindings })).not.toBe(
+      getValidatedEnv(bindings),
+    );
   });
 
   it("rejects a missing environment", () => {

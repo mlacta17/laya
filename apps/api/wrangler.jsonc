@@ -13,7 +13,7 @@
   // Stated in both environments explicitly, like every other key here.
   "observability": {
     "enabled": true,
-    "head_sampling_rate": 1
+    "head_sampling_rate": 1,
   },
   "vars": {
     "ENVIRONMENT": "development",
@@ -23,15 +23,15 @@
     // dev fixture and signs nothing production trusts (ADR-132).
     "AUTH_ISSUER": "https://mock-issuer.laya.invalid",
     "AUTH_AUDIENCE": "laya-api-dev",
-    "MOCK_JWKS": "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"rrAwthawKO5q1pouTujp1wd8pVZCbQSqr7OFlEefEWhJIMWX5ZnNI70NrnnHS4kxjnXNGIPt1P3OJ5ZQfa5M8efjxMhWHN05zSFRshqcao76E3ccxjM73qwfMFaldAs7bJX0isuqcDiDkuOXI59x_mz93RJ7LiS041VnBi-D-as1if1w-BKBYhDrqL2UMj7YSL3uUH3GiHUM699boi_M7J43w5JfEIQE0GrsXBCdYuCctU_3V6niumC2MuLPRHj1fU-v1U4s09wiybljEtIELZbu90sbiyR2JAWYDjIM4nE68WcznD9h3aEbhijk95V5f_ONPJOarU-MVVwaR6w0vQ\",\"e\":\"AQAB\",\"alg\":\"RS256\",\"kid\":\"laya-mock-2026-07\",\"use\":\"sig\"}]}"
+    "MOCK_JWKS": "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"rrAwthawKO5q1pouTujp1wd8pVZCbQSqr7OFlEefEWhJIMWX5ZnNI70NrnnHS4kxjnXNGIPt1P3OJ5ZQfa5M8efjxMhWHN05zSFRshqcao76E3ccxjM73qwfMFaldAs7bJX0isuqcDiDkuOXI59x_mz93RJ7LiS041VnBi-D-as1if1w-BKBYhDrqL2UMj7YSL3uUH3GiHUM699boi_M7J43w5JfEIQE0GrsXBCdYuCctU_3V6niumC2MuLPRHj1fU-v1U4s09wiybljEtIELZbu90sbiyR2JAWYDjIM4nE68WcznD9h3aEbhijk95V5f_ONPJOarU-MVVwaR6w0vQ\",\"e\":\"AQAB\",\"alg\":\"RS256\",\"kid\":\"laya-mock-2026-07\",\"use\":\"sig\"}]}",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "laya-dev",
       "database_id": "35262770-7da9-4ea5-86e8-f62ce3f1c3b7",
-      "migrations_dir": "migrations"
-    }
+      "migrations_dir": "migrations",
+    },
   ],
   "env": {
     // Production: deployed from Phase 0A with NO issuer configured — every
@@ -42,19 +42,19 @@
       "name": "laya-api",
       "observability": {
         "enabled": true,
-        "head_sampling_rate": 1
+        "head_sampling_rate": 1,
       },
       "vars": {
-        "ENVIRONMENT": "production"
+        "ENVIRONMENT": "production",
       },
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "laya",
           "database_id": "ba0b4bc9-e689-4d15-a30e-d8ca92f3f145",
-          "migrations_dir": "migrations"
-        }
-      ]
-    }
-  }
+          "migrations_dir": "migrations",
+        },
+      ],
+    },
+  },
 }

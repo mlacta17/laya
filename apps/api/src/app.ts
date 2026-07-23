@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { requestId } from "hono/request-id";
 import type { ValidatedEnv } from "./env";
@@ -36,7 +36,9 @@ export function createApp(resolveConfig: ConfigResolver): Hono<AppEnv> {
   app.use(
     bodyLimit({
       maxSize: MAX_REQUEST_BODY_BYTES,
-      onError: (c) =>
+      // bodyLimit types its onError context as Context<any>; annotate it so
+      // errorResponse keeps its fully typed AppEnv contract.
+      onError: (c: Context<AppEnv>) =>
         errorResponse(c, 413, "payload_too_large", "Request body too large"),
     }),
   );

@@ -39,8 +39,12 @@ afterEach(() => {
   clearJwksCache();
 });
 
-async function requestWithAuth(header: string | undefined, env: object = devEnv) {
-  const init = header === undefined ? {} : { headers: { Authorization: header } };
+async function requestWithAuth(
+  header: string | undefined,
+  env: object = devEnv,
+) {
+  const init =
+    header === undefined ? {} : { headers: { Authorization: header } };
   return app.request("/v1/ping-store", init, env);
 }
 
@@ -98,10 +102,13 @@ describe("JWT rejection matrix", () => {
 
   it("rejects an unknown key id", async () => {
     silenceWarn();
-    const token = await mintToken({}, {
-      ...(await import("../dev/mock-issuer/keys")).MOCK_PRIVATE_JWK,
-      kid: "not-a-known-kid",
-    });
+    const token = await mintToken(
+      {},
+      {
+        ...(await import("../dev/mock-issuer/keys")).MOCK_PRIVATE_JWK,
+        kid: "not-a-known-kid",
+      },
+    );
     await expectUnauthorized(await requestWithAuth(`Bearer ${token}`));
   });
 
@@ -249,21 +256,27 @@ describe("JWKS fetch and cache (real-provider path)", () => {
       "fetch",
       vi.fn().mockResolvedValue(new Response("", { status: 500 })),
     );
-    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
+    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(
+      JwksFetchError,
+    );
 
     clearJwksCache();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(Response.json({ nope: true })),
     );
-    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
+    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(
+      JwksFetchError,
+    );
 
     clearJwksCache();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(Response.json({ keys: [] })),
     );
-    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
+    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(
+      JwksFetchError,
+    );
 
     clearJwksCache();
     vi.stubGlobal(
@@ -272,7 +285,9 @@ describe("JWKS fetch and cache (real-provider path)", () => {
         .fn()
         .mockResolvedValue(Response.json({ keys: [{ kid: "missing-kty" }] })),
     );
-    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
+    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(
+      JwksFetchError,
+    );
   });
 
   it("retries once with fresh keys when the kid is not in the cached JWKS (rotation)", async () => {

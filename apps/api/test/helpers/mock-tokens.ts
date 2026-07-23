@@ -1,5 +1,4 @@
 import { sign } from "hono/jwt";
-import type { JWTPayload } from "hono/utils/jwt/types";
 import {
   MOCK_AUDIENCE,
   MOCK_ISSUER,
@@ -30,5 +29,5 @@ export async function mintToken(
     }
   }
   // The JWK carries alg + kid, so sign() emits the matching header itself.
-  return sign(claims as JWTPayload, privateJwk as Parameters<typeof sign>[1]);
+  return sign(claims, privateJwk);
 }

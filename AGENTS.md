@@ -14,7 +14,7 @@ Laya is a private, invite-only streaming platform for ~10 friends/family (US + P
 ## Hard rules
 
 - **Scope**: the brief's out-of-scope list is binding. If a task seems to require something out of scope, STOP and flag it. Never build ahead "to save time."
-- **Decisions**: anything decision-shaped (new dependency, schema change, provider behavior assumption, convention deviation) is proposed as an ADR in ARCHITECTURE.md §10 *before* implementation — never silently decided. Prefer the boring choice.
+- **Decisions**: anything decision-shaped (new dependency, schema change, provider behavior assumption, convention deviation) is proposed as an ADR in ARCHITECTURE.md §10 _before_ implementation — never silently decided. Prefer the boring choice.
 - **Verification**: never assume provider behavior (Bunny, D1, auth, TMDB). ARCHITECTURE.md §15 lists official sources; uncertain behavior becomes a spike or a flagged question, not code.
 - **Database**: D1 via native Worker binding only. Prepared statements, `batch()` for multi-statement transitions, STRICT tables, UUIDv7 TEXT ids, INTEGER ms timestamps (§4.0). No ORM.
 - **Never commit**: secrets (Worker/CI secret stores only; `.dev.vars.example` / `.env.example` document variables) or media files (originals live on the owner's drive per ADR-110).
