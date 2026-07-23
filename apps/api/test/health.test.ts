@@ -61,6 +61,7 @@ describe("error envelope", () => {
       ["invalid_request", false],
       ["unauthorized", false],
       ["not_found", false],
+      ["payload_too_large", false],
       ["internal", true],
     ]);
   });

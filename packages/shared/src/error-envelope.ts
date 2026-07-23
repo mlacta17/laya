@@ -7,6 +7,7 @@ export const ERROR_CODES = [
   "invalid_request",
   "unauthorized",
   "not_found",
+  "payload_too_large",
   "internal",
 ] as const;
 
@@ -16,6 +17,7 @@ const RETRYABLE_BY_ERROR_CODE = {
   invalid_request: false,
   unauthorized: false,
   not_found: false,
+  payload_too_large: false,
   internal: true,
 } as const satisfies Record<ErrorCode, boolean>;
 
