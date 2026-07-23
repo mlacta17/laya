@@ -118,7 +118,9 @@ describe("PUT + GET /v1/ping-store round-trip", () => {
     expect(firstLook.status).toBe(404);
 
     await put("second-users-value", otherToken);
-    const theirs = pingStoreResponseSchema.parse(await (await get(otherToken)).json());
+    const theirs = pingStoreResponseSchema.parse(
+      await (await get(otherToken)).json(),
+    );
     expect(theirs.subject).toBe("second-user");
     expect(theirs.value).toBe("second-users-value");
 

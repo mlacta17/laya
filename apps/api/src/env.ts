@@ -40,7 +40,10 @@ const envSchema = z
     AUTH_JWKS_URL: z
       .string()
       .url()
-      .refine((url) => url.toLowerCase().startsWith("https://"), "must use HTTPS")
+      .refine(
+        (url) => url.toLowerCase().startsWith("https://"),
+        "must use HTTPS",
+      )
       .optional(),
   })
   .superRefine((env, ctx) => {
@@ -87,7 +90,8 @@ const envSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["AUTH_JWKS_URL"],
-        message: "development requires exactly one of MOCK_JWKS or AUTH_JWKS_URL",
+        message:
+          "development requires exactly one of MOCK_JWKS or AUTH_JWKS_URL",
       });
     }
   });

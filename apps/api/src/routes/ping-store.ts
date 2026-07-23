@@ -1,5 +1,8 @@
 import { Hono } from "hono";
-import { pingStorePutRequestSchema, type PingStoreResponse } from "@laya/shared";
+import {
+  pingStorePutRequestSchema,
+  type PingStoreResponse,
+} from "@laya/shared";
 import { requireAuth } from "../auth/require-auth";
 import { errorResponse } from "../errors";
 import { uuidv7 } from "../lib/uuidv7";
@@ -39,7 +42,12 @@ export const pingStore = new Hono<AppEnv>()
       .first<PingRow>();
 
     if (!row) {
-      return errorResponse(c, 404, "not_found", "No value stored for this subject");
+      return errorResponse(
+        c,
+        404,
+        "not_found",
+        "No value stored for this subject",
+      );
     }
     return c.json(toResponse(row));
   })
@@ -48,7 +56,12 @@ export const pingStore = new Hono<AppEnv>()
     try {
       raw = await c.req.json();
     } catch {
-      return errorResponse(c, 400, "invalid_request", "Request body must be JSON");
+      return errorResponse(
+        c,
+        400,
+        "invalid_request",
+        "Request body must be JSON",
+      );
     }
     const body = pingStorePutRequestSchema.safeParse(raw);
     if (!body.success) {

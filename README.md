@@ -2,7 +2,7 @@
 
 A private, invite-only streaming platform for family and friends — movies and series the group uploads and shares, with watch progress, subtitles, recommendations, and offline viewing. Built for about ten people across the US and the Philippines. Non-commercial, personal project.
 
-*Laya* is Filipino for "freedom": no subscriptions, no engagement algorithms, no platform deciding what your family can watch.
+_Laya_ is Filipino for "freedom": no subscriptions, no engagement algorithms, no platform deciding what your family can watch.
 
 ## Status
 
@@ -12,11 +12,11 @@ A private, invite-only streaming platform for family and friends — movies and 
 
 Two living documents are the source of truth. Everything else defers to them:
 
-| Document | What it owns |
-|---|---|
+| Document                                       | What it owns                                                                                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | What we're building, how, and **why** — requirements, stack, data model, subsystems, cost model, delivery phases, and the full decision register (ADRs), including reversed decisions and their reasoning |
-| [`docs/DESIGN.md`](docs/DESIGN.md) | The design program — who the users are, information architecture, design phases D0–D5, and definitions of done for every surface |
-| [`docs/phases/`](docs/phases/) | One-page briefs scoping each phase — `active/` holds the current brief (auto-loaded by the agent instruction files); `completed/` archives finished briefs with their outcomes |
+| [`docs/DESIGN.md`](docs/DESIGN.md)             | The design program — who the users are, information architecture, design phases D0–D5, and definitions of done for every surface                                                                          |
+| [`docs/phases/`](docs/phases/)                 | One-page briefs scoping each phase — `active/` holds the current brief (auto-loaded by the agent instruction files); `completed/` archives finished briefs with their outcomes                            |
 
 **Reading order for a newcomer:** see [`docs/README.md`](docs/README.md) — short version: this README → ARCHITECTURE.md §0–§2 → §12 (where we are) → the active brief in `docs/phases/active/`. The ADR register (§10) answers every "why didn't you just…" question — please read it before proposing changes, because most alternatives were already evaluated and the reasoning is recorded.
 
@@ -47,7 +47,7 @@ pnpm workspace with exactly three packages (ARCHITECTURE.md §3.2):
 
 Work proceeds in phases (ARCHITECTURE.md §12), each with a one-page brief and a milestone sentence that defines done. Design runs one phase ahead of engineering (DESIGN.md §6). Two rules keep the project coherent:
 
-1. **Decisions before code.** Any material change — provider, schema, dependency, convention — gets an ADR in ARCHITECTURE.md *before* implementation.
+1. **Decisions before code.** Any material change — provider, schema, dependency, convention — gets an ADR in ARCHITECTURE.md _before_ implementation.
 2. **Docs are canonical in git.** The changelog at the bottom of ARCHITECTURE.md is the freshness key; the copy with the latest row wins.
 
 Most implementation happens with AI coding agents (Claude Code, Codex). [`AGENTS.md`](AGENTS.md) carries their standing instructions — one canonical file for every tool; [`CLAUDE.md`](CLAUDE.md) is a thin shim that imports it for Claude Code.

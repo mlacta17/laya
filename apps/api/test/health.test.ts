@@ -47,7 +47,9 @@ describe("error envelope", () => {
   });
 
   it("fails loudly with the envelope when the environment is invalid", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     const res = await app.request("/v1/health", {}, { ENVIRONMENT: "staging" });
 
     expect(res.status).toBe(500);

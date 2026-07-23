@@ -69,7 +69,9 @@ async function fetchSigningKeys(url: string): Promise<JwksKey[]> {
 
   const parsed = jwksSchema.safeParse(body);
   if (!parsed.success) {
-    throw new JwksFetchError(`JWKS response is invalid: ${parsed.error.message}`);
+    throw new JwksFetchError(
+      `JWKS response is invalid: ${parsed.error.message}`,
+    );
   }
 
   cache = { url, keys: parsed.data.keys, fetchedAt: Date.now() };
