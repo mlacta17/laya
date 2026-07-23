@@ -1,6 +1,8 @@
 # Local-only Worker variables. Copy to .dev.vars (gitignored) — Wrangler
-# loads it automatically for `wrangler dev`. Never commit real secrets
-# (AGENTS.md hard rules).
+# loads it automatically for `wrangler dev` and values here override the dev
+# `vars` in wrangler.jsonc. Never commit real secrets (AGENTS.md hard rules).
 #
-# No secrets are required yet. Mock-issuer variables (audience, JWKS URL)
-# arrive with the auth step of Phase 0A and are documented here when they do.
+# No secrets are required yet: the mock-issuer configuration (AUTH_ISSUER,
+# AUTH_AUDIENCE, MOCK_JWKS) ships in wrangler.jsonc dev vars because it is
+# public fixture material, not a secret (see dev/mock-issuer/keys.ts).
+# Override any of those here only if you are experimenting locally.

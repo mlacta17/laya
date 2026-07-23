@@ -1,19 +1,31 @@
 // Worker configuration for both environments (ADR-132: fully separate
 // Workers, D1 databases, hostnames and secrets; the mock issuer exists only
 // in dev). Top-level config IS the dev environment; `--env production`
-// selects the production block. Wrangler does not inherit `vars` into named
-// environments, so each environment states its variables explicitly.
-//
-// D1 bindings are added in the next step of Phase 0A, when the databases are
-// created (laya-dev / production per ADR-132).
+// selects the production block. Wrangler does not inherit `vars` or bindings
+// into named environments, so each environment states everything explicitly.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "laya-api-dev",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "development",
+    // Mock issuer (dev only, ADR-134). Keep issuer/audience and the public
+    // key in sync with apps/api/dev/mock-issuer/keys.ts. MOCK_JWKS holds
+    // PUBLIC key material only — the private half lives in the committed
+    // dev fixture and signs nothing production trusts (ADR-132).
+    "AUTH_ISSUER": "https://mock-issuer.laya.invalid",
+    "AUTH_AUDIENCE": "laya-api-dev",
+    "MOCK_JWKS": "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"rrAwthawKO5q1pouTujp1wd8pVZCbQSqr7OFlEefEWhJIMWX5ZnNI70NrnnHS4kxjnXNGIPt1P3OJ5ZQfa5M8efjxMhWHN05zSFRshqcao76E3ccxjM73qwfMFaldAs7bJX0isuqcDiDkuOXI59x_mz93RJ7LiS041VnBi-D-as1if1w-BKBYhDrqL2UMj7YSL3uUH3GiHUM699boi_M7J43w5JfEIQE0GrsXBCdYuCctU_3V6niumC2MuLPRHj1fU-v1U4s09wiybljEtIELZbu90sbiyR2JAWYDjIM4nE68WcznD9h3aEbhijk95V5f_ONPJOarU-MVVwaR6w0vQ\",\"e\":\"AQAB\",\"alg\":\"RS256\",\"kid\":\"laya-mock-2026-07\",\"use\":\"sig\"}]}"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "laya-dev",
+      "database_id": "35262770-7da9-4ea5-86e8-f62ce3f1c3b7",
+      "migrations_dir": "migrations"
+    }
+  ],
   "env": {
     // Production: deployed from Phase 0A with NO issuer configured — every
     // authenticated request 401s until Phase 0B selects the real provider
@@ -23,7 +35,15 @@
       "name": "laya-api",
       "vars": {
         "ENVIRONMENT": "production"
-      }
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "laya",
+          "database_id": "ba0b4bc9-e689-4d15-a30e-d8ca92f3f145",
+          "migrations_dir": "migrations"
+        }
+      ]
     }
   }
 }

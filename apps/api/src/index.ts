@@ -1,9 +1,17 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { requestId } from "hono/request-id";
 import { validateEnv } from "./env";
 import { errorResponse } from "./errors";
+import { devJwks } from "./routes/dev-jwks";
 import { health } from "./routes/health";
+import { pingStore } from "./routes/ping-store";
 import type { AppEnv } from "./types";
+
+// §3.3: explicit maximum request-body size; media bytes are rejected by the
+// API. Every route inherits this default — raise it per-route only with an
+// explicit reason.
+const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 
 const app = new Hono<AppEnv>();
 
@@ -19,7 +27,17 @@ app.use(async (c, next) => {
   await next();
 });
 
+app.use(
+  bodyLimit({
+    maxSize: MAX_REQUEST_BODY_BYTES,
+    onError: (c) =>
+      errorResponse(c, 413, "payload_too_large", "Request body too large"),
+  }),
+);
+
 app.route("/v1/health", health);
+app.route("/v1/ping-store", pingStore);
+app.route("/dev/.well-known/jwks.json", devJwks);
 
 app.notFound((c) => errorResponse(c, 404, "not_found", "Route not found"));
 
