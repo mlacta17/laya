@@ -6,15 +6,18 @@ import {
   MOCK_JWKS_JSON,
   MOCK_PUBLIC_JWK,
 } from "../dev/mock-issuer/keys";
+import { createApp } from "../src/app";
 import {
   clearJwksCache,
   getSigningKeys,
   JwksFetchError,
 } from "../src/auth/jwks";
 import { verifyAccessToken } from "../src/auth/verify-token";
-import app from "../src/index";
+import { getValidatedEnv } from "../src/env";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
 import { ROGUE_PRIVATE_JWK } from "./helpers/rogue-key";
+
+const app = createApp(getValidatedEnv);
 
 // The JWT rejection matrix (brief scope item 10) — the inherited pattern for
 // every future authenticated route. The "accept the valid case" half lives
@@ -61,6 +64,24 @@ describe("JWT rejection matrix", () => {
     silenceWarn();
     const token = await mintToken({ exp: nowSeconds() - 60 });
     await expectUnauthorized(await requestWithAuth(`Bearer ${token}`));
+  });
+
+  it("never writes a rejected bearer token to structured logs", async () => {
+    const warn = silenceWarn();
+    const token = await mintToken({ exp: nowSeconds() - 60 });
+
+    await expectUnauthorized(await requestWithAuth(`Bearer ${token}`));
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    const logEntry = warn.mock.calls[0]?.[0];
+    expect(logEntry).toEqual(
+      expect.objectContaining({
+        event: "auth_rejected",
+        reason: "JwtTokenExpired",
+      }),
+    );
+    expect(logEntry).not.toHaveProperty("detail");
+    expect(JSON.stringify(logEntry)).not.toContain(token);
   });
 
   it("rejects a wrong audience", async () => {

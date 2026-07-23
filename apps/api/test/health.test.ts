@@ -10,7 +10,10 @@ import {
   MOCK_ISSUER,
   MOCK_JWKS_JSON,
 } from "../dev/mock-issuer/keys";
-import app from "../src/index";
+import { createApp } from "../src/app";
+import { getValidatedEnv } from "../src/env";
+
+const app = createApp(getValidatedEnv);
 
 const devEnv = {
   ENVIRONMENT: "development",

@@ -6,10 +6,10 @@ import type { ValidatedEnv } from "./env";
 //
 // Bindings is the global `Env` interface that `wrangler types` generates from
 // wrangler.jsonc into worker-configuration.d.ts (ADR-136) — regenerate with
-// `pnpm types` (the typecheck script also does it). Binding types are never
-// hand-written, so configuration and code cannot drift. String vars are
-// validated by src/env.ts before use; native platform bindings (D1) are used
-// directly through c.env.
+// `pnpm types`; typecheck verifies the committed file without rewriting it.
+// Binding types are never hand-written, so configuration and code cannot
+// drift. String vars are validated by src/env.ts before use; native platform
+// bindings (D1) are used directly through c.env.
 export type AppEnv = {
   Bindings: Env;
   Variables: RequestIdVariables & {

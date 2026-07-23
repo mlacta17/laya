@@ -5,9 +5,12 @@ import {
   MOCK_ISSUER,
   MOCK_JWKS_JSON,
 } from "../dev/mock-issuer/keys";
-import app from "../src/index";
+import { createApp } from "../src/app";
+import { getValidatedEnv } from "../src/env";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
 import { createTestDb } from "./helpers/test-db";
+
+const app = createApp(getValidatedEnv);
 
 // The milestone round-trip (brief): a mock-issuer JWT is verified, writes a
 // row to D1, reads it back — and only the caller's own row is ever visible.
