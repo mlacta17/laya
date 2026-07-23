@@ -3,6 +3,7 @@ import type { Context } from "hono";
 import { errorResponse } from "../errors";
 import type { AppEnv } from "../types";
 import { getAuthConfig } from "./config";
+import { JwksFetchError } from "./jwks";
 import { verifyAccessToken } from "./verify-token";
 
 // Route guard: verifies the bearer token and puts { subject } on
@@ -30,17 +31,27 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   try {
     c.set("auth", await verifyAccessToken(match[1], authConfig));
   } catch (err) {
-    return unauthorized(c, err instanceof Error ? err.name : "unknown_error");
+    // Only JwksFetchError messages are safe to log as detail — we compose
+    // them ourselves (status code, timeout, parse failure), and during a
+    // provider outage that detail is what an operator needs. hono's JWT error
+    // messages embed the raw token, so a generic err.message here would put
+    // live credentials in the logs.
+    return unauthorized(
+      c,
+      err instanceof Error ? err.name : "unknown_error",
+      err instanceof JwksFetchError ? err.message : undefined,
+    );
   }
 
   await next();
 });
 
-function unauthorized(c: Context<AppEnv>, reason: string) {
+function unauthorized(c: Context<AppEnv>, reason: string, detail?: string) {
   console.warn({
     event: "auth_rejected",
     requestId: c.get("requestId"),
     reason,
+    ...(detail !== undefined && { detail }),
   });
   return errorResponse(c, 401, "unauthorized", "Invalid or missing credentials");
 }

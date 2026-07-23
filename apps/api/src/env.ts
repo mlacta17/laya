@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jwksSchema } from "./auth/jwks-schema";
 
 // Typed environment validation (PHASE-0A-BRIEF.md scope item 2): a missing or
 // wrong variable fails loudly instead of surfacing as confusing behavior
@@ -16,7 +17,25 @@ const envSchema = z
     // Where the verifier gets public keys, exactly one of:
     //   MOCK_JWKS      — the mock issuer's public JWKS inline (dev only).
     //   AUTH_JWKS_URL  — the real provider's JWKS endpoint (Phase 0B).
-    MOCK_JWKS: z.string().min(1).optional(),
+    // MOCK_JWKS arrives as a JSON string var and is parsed and shape-checked
+    // right here, so a broken fixture is a startup error (500, loud) —
+    // misconfiguration, never a bad request. Downstream code receives the
+    // parsed document.
+    MOCK_JWKS: z
+      .string()
+      .transform((raw, ctx) => {
+        try {
+          return JSON.parse(raw) as unknown;
+        } catch {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "must be valid JSON",
+          });
+          return z.NEVER;
+        }
+      })
+      .pipe(jwksSchema)
+      .optional(),
     AUTH_JWKS_URL: z
       .string()
       .url()

@@ -7,10 +7,11 @@ import type { AppEnv } from "../types";
 // trusts. Verification itself reads the same keys straight from config — the
 // Worker never fetches this route. Production has no MOCK_JWKS (its env
 // validation rejects it), so this route 404s there by construction.
+// MOCK_JWKS is parsed and shape-checked by src/env.ts; serve it as-is.
 export const devJwks = new Hono<AppEnv>().get("/", (c) => {
   const config = c.var.config;
   if (config.ENVIRONMENT !== "development" || !config.MOCK_JWKS) {
     return errorResponse(c, 404, "not_found", "Route not found");
   }
-  return c.json(JSON.parse(config.MOCK_JWKS) as Record<string, unknown>);
+  return c.json(config.MOCK_JWKS);
 });

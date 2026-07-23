@@ -1,4 +1,5 @@
-import { jwksSchema, type AuthConfig, type JwksKey } from "./config";
+import type { AuthConfig } from "./config";
+import { jwksSchema, type JwksKey } from "./jwks-schema";
 
 // Public signing keys for the verifier. Inline mock keys (dev) are returned
 // as-is; a provider JWKS URL (Phase 0B) is fetched and cached per isolate so

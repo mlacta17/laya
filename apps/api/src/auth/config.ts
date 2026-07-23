@@ -1,25 +1,5 @@
-import { z } from "zod";
 import type { ValidatedEnv } from "../env";
-
-// A provider may publish keys for several algorithms. Validate the fields we
-// rely on, require at least one key, and leave algorithm-specific material for
-// Web Crypto/Hono to validate when the matching key is used.
-export const jwksSchema = z
-  .object({
-    keys: z
-      .array(
-        z
-          .object({
-            kid: z.string().min(1),
-            kty: z.string().min(1),
-          })
-          .passthrough(),
-      )
-      .min(1),
-  })
-  .passthrough();
-
-export type JwksKey = z.infer<typeof jwksSchema>["keys"][number];
+import type { JwksKey } from "./jwks-schema";
 
 export type AuthConfig = {
   issuer: string;
@@ -31,7 +11,9 @@ export type AuthConfig = {
 
 // Derives the verifier's configuration from validated env vars, or null when
 // auth is not configured — production's state until Phase 0B (ADR-134), in
-// which case every authenticated request is rejected with 401.
+// which case every authenticated request is rejected with 401. MOCK_JWKS is
+// already parsed and shape-checked by src/env.ts, so a broken fixture fails
+// at startup rather than here.
 export function getAuthConfig(env: ValidatedEnv): AuthConfig | null {
   if (env.ENVIRONMENT === "production") {
     return null;
@@ -40,21 +22,10 @@ export function getAuthConfig(env: ValidatedEnv): AuthConfig | null {
     throw new Error("Validated development auth configuration is incomplete");
   }
   if (env.MOCK_JWKS) {
-    let document: unknown;
-    try {
-      document = JSON.parse(env.MOCK_JWKS);
-    } catch {
-      throw new Error("MOCK_JWKS is not valid JSON");
-    }
-    const parsed = jwksSchema.safeParse(document);
-    if (!parsed.success) {
-      // Misconfiguration, not a bad request — fail loudly (500), never 401.
-      throw new Error(`MOCK_JWKS is not a valid JWKS: ${parsed.error.message}`);
-    }
     return {
       issuer: env.AUTH_ISSUER,
       audience: env.AUTH_AUDIENCE,
-      keySource: { type: "inline", keys: parsed.data.keys },
+      keySource: { type: "inline", keys: env.MOCK_JWKS.keys },
     };
   }
   if (env.AUTH_JWKS_URL) {
