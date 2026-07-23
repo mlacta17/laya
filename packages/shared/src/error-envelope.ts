@@ -1,27 +1,35 @@
 import { z } from "zod";
 
-// Every error code is classified retryable or terminal here, in the shared
-// contract, so clients never guess (ARCHITECTURE.md §3.3).
-export const ERROR_CODES = {
-  invalid_request: { retryable: false },
-  unauthorized: { retryable: false },
-  not_found: { retryable: false },
-  internal: { retryable: true },
-} as const;
+// This tuple is the single source of truth for both the runtime schema and
+// the TypeScript type. Adding a code here makes every classification below a
+// compile-time requirement (ARCHITECTURE.md §3.3).
+export const ERROR_CODES = [
+  "invalid_request",
+  "unauthorized",
+  "not_found",
+  "internal",
+] as const;
 
-export type ErrorCode = keyof typeof ERROR_CODES;
+export type ErrorCode = (typeof ERROR_CODES)[number];
+
+const RETRYABLE_BY_ERROR_CODE = {
+  invalid_request: false,
+  unauthorized: false,
+  not_found: false,
+  internal: true,
+} as const satisfies Record<ErrorCode, boolean>;
 
 export function isRetryable(code: ErrorCode): boolean {
-  return ERROR_CODES[code].retryable;
+  return RETRYABLE_BY_ERROR_CODE[code];
 }
 
 // The one error shape every route returns (ARCHITECTURE.md §3.3):
 // { "error": { "code", "message", "requestId" } }
 export const errorEnvelopeSchema = z.object({
   error: z.object({
-    code: z.enum(["invalid_request", "unauthorized", "not_found", "internal"]),
-    message: z.string(),
-    requestId: z.string(),
+    code: z.enum(ERROR_CODES),
+    message: z.string().min(1),
+    requestId: z.string().min(1),
   }),
 });
 

@@ -10,7 +10,7 @@ const app = new Hono<AppEnv>();
 app.use(requestId());
 
 app.use(async (c, next) => {
-  validateEnv(c.env);
+  c.set("config", validateEnv(c.env));
   await next();
   c.res.headers.set("X-Request-Id", c.get("requestId"));
 });
@@ -20,7 +20,15 @@ app.route("/v1/health", health);
 app.notFound((c) => errorResponse(c, 404, "not_found", "Route not found"));
 
 app.onError((err, c) => {
-  console.error(`[${c.get("requestId")}] Unhandled error:`, err);
+  console.error({
+    event: "unhandled_request_error",
+    requestId: c.get("requestId"),
+    error: {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    },
+  });
   return errorResponse(c, 500, "internal", "Internal error");
 });
 
