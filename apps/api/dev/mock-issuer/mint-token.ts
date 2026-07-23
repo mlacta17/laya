@@ -4,7 +4,8 @@
 // Then:   curl -H "Authorization: Bearer <token>" \
 //              https://laya-api-dev.<account>.workers.dev/v1/ping-store
 //
-// Runs under the workspace's pinned Node (>= 23 strips TS types natively).
+// Runs under the workspace's pinned Node (.npmrc `use-node-version`), which
+// strips TS types natively — that pin is the authority on the Node version.
 // Dev-only tooling — production trusts none of these tokens (ADR-134).
 import { sign } from "hono/jwt";
 import { MOCK_AUDIENCE, MOCK_ISSUER, MOCK_PRIVATE_JWK } from "./keys.ts";
