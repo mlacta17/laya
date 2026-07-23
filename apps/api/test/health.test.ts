@@ -5,9 +5,19 @@ import {
   healthResponseSchema,
   isRetryable,
 } from "@laya/shared";
+import {
+  MOCK_AUDIENCE,
+  MOCK_ISSUER,
+  MOCK_JWKS_JSON,
+} from "../dev/mock-issuer/keys";
 import app from "../src/index";
 
-const devEnv = { ENVIRONMENT: "development" };
+const devEnv = {
+  ENVIRONMENT: "development",
+  AUTH_ISSUER: MOCK_ISSUER,
+  AUTH_AUDIENCE: MOCK_AUDIENCE,
+  MOCK_JWKS: MOCK_JWKS_JSON,
+};
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -64,5 +74,22 @@ describe("error envelope", () => {
       ["payload_too_large", false],
       ["internal", true],
     ]);
+  });
+
+  it("returns the standard 413 envelope when the global body limit is exceeded", async () => {
+    const res = await app.request(
+      "/v1/ping-store",
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ value: "x".repeat(17 * 1024) }),
+      },
+      devEnv,
+    );
+
+    expect(res.status).toBe(413);
+    const body = errorEnvelopeSchema.parse(await res.json());
+    expect(body.error.code).toBe("payload_too_large");
+    expect(res.headers.get("X-Request-Id")).toBe(body.error.requestId);
   });
 });

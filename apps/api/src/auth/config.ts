@@ -1,11 +1,23 @@
 import { z } from "zod";
 import type { ValidatedEnv } from "../env";
 
-// A JWKS is `{ "keys": [ { kid, kty, ... } ] }`. We validate only the shape
-// we rely on and pass keys through to the verifier untouched.
-const jwksSchema = z.object({
-  keys: z.array(z.object({ kid: z.string().min(1) }).passthrough()),
-});
+// A provider may publish keys for several algorithms. Validate the fields we
+// rely on, require at least one key, and leave algorithm-specific material for
+// Web Crypto/Hono to validate when the matching key is used.
+export const jwksSchema = z
+  .object({
+    keys: z
+      .array(
+        z
+          .object({
+            kid: z.string().min(1),
+            kty: z.string().min(1),
+          })
+          .passthrough(),
+      )
+      .min(1),
+  })
+  .passthrough();
 
 export type JwksKey = z.infer<typeof jwksSchema>["keys"][number];
 
@@ -21,11 +33,20 @@ export type AuthConfig = {
 // auth is not configured — production's state until Phase 0B (ADR-134), in
 // which case every authenticated request is rejected with 401.
 export function getAuthConfig(env: ValidatedEnv): AuthConfig | null {
-  if (!env.AUTH_ISSUER || !env.AUTH_AUDIENCE) {
+  if (env.ENVIRONMENT === "production") {
     return null;
   }
+  if (!env.AUTH_ISSUER || !env.AUTH_AUDIENCE) {
+    throw new Error("Validated development auth configuration is incomplete");
+  }
   if (env.MOCK_JWKS) {
-    const parsed = jwksSchema.safeParse(JSON.parse(env.MOCK_JWKS));
+    let document: unknown;
+    try {
+      document = JSON.parse(env.MOCK_JWKS);
+    } catch {
+      throw new Error("MOCK_JWKS is not valid JSON");
+    }
+    const parsed = jwksSchema.safeParse(document);
     if (!parsed.success) {
       // Misconfiguration, not a bad request — fail loudly (500), never 401.
       throw new Error(`MOCK_JWKS is not a valid JWKS: ${parsed.error.message}`);
@@ -43,5 +64,5 @@ export function getAuthConfig(env: ValidatedEnv): AuthConfig | null {
       keySource: { type: "url", url: env.AUTH_JWKS_URL },
     };
   }
-  return null;
+  throw new Error("Validated development auth configuration has no key source");
 }

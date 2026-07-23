@@ -1,4 +1,4 @@
-import { verifyWithJwks } from "hono/jwt";
+import { decode, verifyWithJwks } from "hono/jwt";
 import { JwtTokenInvalid } from "hono/utils/jwt/types";
 import type { AuthConfig } from "./config";
 import { getSigningKeys } from "./jwks";
@@ -19,6 +19,10 @@ export async function verifyAccessToken(
   token: string,
   config: AuthConfig,
 ): Promise<AuthContext> {
+  // Reject malformed tokens before a URL-backed configuration performs any
+  // provider fetch. decode() verifies only JWT structure; signature and claims
+  // are still checked below by verifyWithJwks().
+  const { header } = decode(token);
   let keys = await getSigningKeys(config.keySource);
 
   const verification = {
@@ -37,11 +41,18 @@ export async function verifyAccessToken(
       allowedAlgorithms: ["RS256"],
     });
   } catch (err) {
-    // JwtTokenInvalid covers "no key matches this kid". With a fetched JWKS
-    // that can just mean our cache predates a provider key rotation, so
-    // refresh once and retry. (A malformed token also lands here and wastes
-    // one refetch — rare enough to keep this branch simple.)
-    if (err instanceof JwtTokenInvalid && config.keySource.type === "url") {
+    // Refresh only when a structurally valid RS256 token names a kid absent
+    // from our cached provider keys. JwtTokenInvalid also covers malformed
+    // tokens, so the error class alone is not a safe rotation signal.
+    const unknownRsaKid =
+      header.alg === "RS256" &&
+      typeof header.kid === "string" &&
+      !keys.some((key) => key.kid === header.kid);
+    if (
+      err instanceof JwtTokenInvalid &&
+      config.keySource.type === "url" &&
+      unknownRsaKid
+    ) {
       keys = await getSigningKeys(config.keySource, { forceRefresh: true });
       payload = await verifyWithJwks(token, {
         keys,

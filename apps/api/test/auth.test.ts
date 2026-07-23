@@ -6,8 +6,14 @@ import {
   MOCK_JWKS_JSON,
   MOCK_PUBLIC_JWK,
 } from "../dev/mock-issuer/keys";
-import { clearJwksCache, getSigningKeys, JwksFetchError } from "../src/auth/jwks";
+import { getAuthConfig } from "../src/auth/config";
+import {
+  clearJwksCache,
+  getSigningKeys,
+  JwksFetchError,
+} from "../src/auth/jwks";
 import { verifyAccessToken } from "../src/auth/verify-token";
+import { validateEnv } from "../src/env";
 import app from "../src/index";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
 import { ROGUE_PRIVATE_JWK } from "./helpers/rogue-key";
@@ -117,6 +123,21 @@ describe("JWT rejection matrix", () => {
     await expectUnauthorized(await requestWithAuth("Bearer not.a.jwt"));
   });
 
+  it("rejects a malformed JWT without fetching URL-backed keys", async () => {
+    silenceWarn();
+    const env = {
+      ...devEnv,
+      MOCK_JWKS: undefined,
+      AUTH_JWKS_URL: "https://provider.example/jwks.json",
+    };
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expectUnauthorized(await requestWithAuth("Bearer not.a.jwt", env));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("rejects when the JWKS fetch fails", async () => {
     silenceWarn();
     // Real-provider path: keys come from a URL, and that fetch breaks.
@@ -141,6 +162,24 @@ describe("JWT rejection matrix", () => {
   });
 });
 
+describe("inline JWKS configuration", () => {
+  const configWith = (mockJwks: string) =>
+    validateEnv({
+      ENVIRONMENT: "development",
+      AUTH_ISSUER: MOCK_ISSUER,
+      AUTH_AUDIENCE: MOCK_AUDIENCE,
+      MOCK_JWKS: mockJwks,
+    });
+
+  it.each([
+    ["invalid JSON", "not-json"],
+    ["an empty key set", '{"keys":[]}'],
+    ["a key without kty", '{"keys":[{"kid":"missing-kty"}]}'],
+  ])("rejects %s", (_case, mockJwks) => {
+    expect(() => getAuthConfig(configWith(mockJwks))).toThrow();
+  });
+});
+
 describe("JWKS fetch and cache (real-provider path)", () => {
   const url = "https://provider.example/jwks.json";
   const urlSource = { type: "url", url } as const;
@@ -159,6 +198,23 @@ describe("JWKS fetch and cache (real-provider path)", () => {
     expect(first[0]?.kid).toBe(MOCK_PUBLIC_JWK.kid);
     expect(second).toBe(first);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it("shares one in-flight fetch across concurrent cache misses", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jwksResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    const [first, second] = await Promise.all([
+      getSigningKeys(urlSource),
+      getSigningKeys(urlSource),
+    ]);
+
+    expect(second).toBe(first);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("refetches on forceRefresh", async () => {
@@ -175,13 +231,32 @@ describe("JWKS fetch and cache (real-provider path)", () => {
   });
 
   it("throws JwksFetchError on a non-OK response or bad body", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 500 })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("", { status: 500 })),
+    );
     await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
 
     clearJwksCache();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(Response.json({ nope: true })),
+    );
+    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
+
+    clearJwksCache();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ keys: [] })),
+    );
+    await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
+
+    clearJwksCache();
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(Response.json({ keys: [{ kid: "missing-kty" }] })),
     );
     await expect(getSigningKeys(urlSource)).rejects.toBeInstanceOf(JwksFetchError);
   });
