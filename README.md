@@ -6,7 +6,7 @@ A private, invite-only streaming platform for family and friends — movies and 
 
 ## Status
 
-**Phase 0A (Skeleton) in progress.** The workspace, shared contracts, API health slice and dev/production environment split exist; D1, mock auth, ping-store, one-command dev and CI land next. Track progress in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §12, where completed phases get dated.
+**Phase 0A (Skeleton) in progress.** The workspace, environment split, D1 migration, mock JWT verification, authenticated ping-store, and rejection/round-trip tests exist. The web health page, one-command development script, static tooling, and CI remain. Track progress in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §12, where completed phases get dated.
 
 ## How this project is organized
 
@@ -34,9 +34,14 @@ pnpm workspace with exactly three packages (ARCHITECTURE.md §3.2):
 
 1. Install pnpm 9 (`npm install -g pnpm@9` with any Node). pnpm then downloads the project's pinned Node automatically (`.npmrc`) — no system Node upgrade needed.
 2. `pnpm install`
-3. `pnpm --filter @laya/api dev` — API on <http://localhost:8787>; try <http://localhost:8787/v1/health>.
-4. `pnpm --filter @laya/web dev` — web app (placeholder page for now).
-5. `pnpm typecheck` and `pnpm test` run everything, from the root.
+3. `pnpm --filter @laya/api exec wrangler d1 migrations apply DB --local` — apply migration `0001` to a fresh or existing local D1 database.
+4. `pnpm --filter @laya/api dev` — API on <http://localhost:8787>; try <http://localhost:8787/v1/health>.
+5. In another terminal, run `pnpm --filter @laya/api mint-token local-dev-user` and copy the printed development token.
+6. Prove the authenticated write/read path:
+   - `curl -X PUT -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"value":"hello-laya"}' http://localhost:8787/v1/ping-store`
+   - `curl -H "Authorization: Bearer <token>" http://localhost:8787/v1/ping-store`
+7. `pnpm --filter @laya/web dev` — web app (placeholder page for now).
+8. `pnpm typecheck` and `pnpm test` run everything, from the root.
 
 ## Development workflow
 
