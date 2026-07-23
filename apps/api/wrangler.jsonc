@@ -8,6 +8,13 @@
   "name": "laya-api-dev",
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
+  // Persist structured logs to Workers Logs (§3.2 observability). Sample
+  // everything — at this project's scale there is no volume reason not to.
+  // Stated in both environments explicitly, like every other key here.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
   "vars": {
     "ENVIRONMENT": "development",
     // Mock issuer (dev only, ADR-134). Keep issuer/audience and the public
@@ -33,6 +40,10 @@
     // (ADR-132).
     "production": {
       "name": "laya-api",
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      },
       "vars": {
         "ENVIRONMENT": "production"
       },
