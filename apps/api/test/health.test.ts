@@ -17,6 +17,7 @@ const app = createApp(getValidatedEnv);
 
 const devEnv = {
   ENVIRONMENT: "development",
+  WEB_ORIGIN: "http://localhost:5173",
   AUTH_ISSUER: MOCK_ISSUER,
   AUTH_AUDIENCE: MOCK_AUDIENCE,
   MOCK_JWKS: MOCK_JWKS_JSON,
@@ -34,6 +35,72 @@ describe("GET /v1/health", () => {
     const body = healthResponseSchema.parse(await res.json());
     expect(body.status).toBe("ok");
     expect(res.headers.get("X-Request-Id")).toBe(body.requestId);
+  });
+});
+
+describe("CORS policy (ADR-137)", () => {
+  it("allows the configured web origin and exposes the request ID", async () => {
+    const res = await app.request(
+      "/v1/health",
+      { headers: { Origin: devEnv.WEB_ORIGIN } },
+      devEnv,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
+      devEnv.WEB_ORIGIN,
+    );
+    expect(res.headers.get("Access-Control-Expose-Headers")).toBe(
+      "X-Request-Id",
+    );
+    expect(res.headers.get("Vary")).toContain("Origin");
+  });
+
+  it("does not allow an unconfigured origin", async () => {
+    const res = await app.request(
+      "/v1/health",
+      { headers: { Origin: "https://attacker.example" } },
+      devEnv,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+
+  it("answers the authenticated PUT preflight without invoking auth", async () => {
+    const res = await app.request(
+      "/v1/ping-store",
+      {
+        method: "OPTIONS",
+        headers: {
+          Origin: devEnv.WEB_ORIGIN,
+          "Access-Control-Request-Method": "PUT",
+          "Access-Control-Request-Headers":
+            "authorization, content-type, x-request-id",
+        },
+      },
+      devEnv,
+    );
+
+    expect(res.status).toBe(204);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
+      devEnv.WEB_ORIGIN,
+    );
+    expect(res.headers.get("Access-Control-Allow-Methods")).toContain("PUT");
+    expect(res.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Authorization,Content-Type,X-Request-Id",
+    );
+  });
+
+  it("permits no browser origin when production has no web host", async () => {
+    const res = await app.request(
+      "/v1/health",
+      { headers: { Origin: devEnv.WEB_ORIGIN } },
+      { ENVIRONMENT: "production" },
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
 });
 

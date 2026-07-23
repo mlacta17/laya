@@ -37,6 +37,7 @@ const productionConfig = unstable_readConfig(
 
 describe("wrangler.jsonc dev vars", () => {
   it("stays in sync with the committed mock-issuer fixture", () => {
+    expect(devConfig.vars.WEB_ORIGIN).toBe("http://localhost:5173");
     expect(devConfig.vars.AUTH_ISSUER).toBe(MOCK_ISSUER);
     expect(devConfig.vars.AUTH_AUDIENCE).toBe(MOCK_AUDIENCE);
     expect(devConfig.vars.MOCK_JWKS).toBe(MOCK_JWKS_JSON);
