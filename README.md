@@ -6,7 +6,7 @@ _Laya_ is Filipino for "freedom": no subscriptions, no engagement algorithms, no
 
 ## Status
 
-**Phase 0A (Skeleton) in progress.** The workspace, environment split, D1 migration, mock JWT verification, authenticated ping-store, and rejection/round-trip tests exist. The web health page, one-command development script, static tooling, and CI remain. Track progress in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §12, where completed phases get dated.
+**Phase 0A (Skeleton) in progress.** The workspace, environment split, D1 migration, mock JWT verification, authenticated ping-store, rejection/round-trip tests, static tooling (ESLint + Prettier), the web health page, and one-command local development exist. CI and the deployed acceptance checks remain. Track progress in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §12, where completed phases get dated.
 
 ## How this project is organized
 
@@ -30,18 +30,16 @@ pnpm workspace with exactly three packages (ARCHITECTURE.md §3.2):
 
 ## Quickstart
 
-> The Phase 0A acceptance target is: fresh clone → running local stack (Worker + local D1 + web app + mock auth) with **one command, in under 15 minutes**. The one-command script arrives later in 0A; until then:
+> The Phase 0A acceptance target is: fresh clone → running local stack (Worker + local D1 + web app + mock auth) with **one command, in under 15 minutes**.
 
 1. Install pnpm 9 (`npm install -g pnpm@9` with any Node). pnpm then downloads the project's pinned Node automatically (`.npmrc`) — no system Node upgrade needed.
 2. `pnpm install`
-3. `pnpm --filter @laya/api exec wrangler d1 migrations apply DB --local` — apply migration `0001` to a fresh or existing local D1 database.
-4. `pnpm --filter @laya/api dev` — API on <http://localhost:8787>; try <http://localhost:8787/v1/health>.
-5. In another terminal, run `pnpm --filter @laya/api mint-token local-dev-user` and copy the printed development token.
-6. Prove the authenticated write/read path:
+3. Copy `apps/web/.env.example` to `apps/web/.env` — tells the web app where the API runs; the defaults are correct for local development.
+4. `pnpm dev` — the one command: applies pending D1 migrations locally, then starts the API (<http://localhost:8787>) and the web app (<http://localhost:5173>, which shows the live `/v1/health` result) together. The mock issuer needs no server — its keys are inline dev configuration.
+5. To prove the authenticated write/read path, in another terminal run `pnpm --filter @laya/api mint-token local-dev-user`, copy the printed development token, then:
    - `curl -X PUT -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d '{"value":"hello-laya"}' http://localhost:8787/v1/ping-store`
    - `curl -H "Authorization: Bearer <token>" http://localhost:8787/v1/ping-store`
-7. `pnpm --filter @laya/web dev` — web app (placeholder page for now).
-8. `pnpm typecheck` and `pnpm test` run everything, from the root.
+6. `pnpm typecheck` and `pnpm test` run everything, from the root.
 
 ## Development workflow
 
