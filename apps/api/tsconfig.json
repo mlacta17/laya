@@ -1,7 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["@cloudflare/workers-types"]
+    "types": ["@cloudflare/workers-types"],
+    // dev/ scripts run directly under Node (>= 23 strips types natively),
+    // where ESM imports need explicit .ts extensions. Legal because noEmit.
+    "allowImportingTsExtensions": true
   },
-  "include": ["src", "test"]
+  "include": ["src", "test", "dev"]
 }

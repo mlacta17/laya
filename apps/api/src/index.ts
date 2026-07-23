@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { requestId } from "hono/request-id";
 import { validateEnv } from "./env";
 import { errorResponse } from "./errors";
+import { devJwks } from "./routes/dev-jwks";
 import { health } from "./routes/health";
 import type { AppEnv } from "./types";
 
@@ -20,6 +21,7 @@ app.use(async (c, next) => {
 });
 
 app.route("/v1/health", health);
+app.route("/dev/.well-known/jwks.json", devJwks);
 
 app.notFound((c) => errorResponse(c, 404, "not_found", "Route not found"));
 

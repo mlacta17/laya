@@ -9,7 +9,14 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-07-01",
   "vars": {
-    "ENVIRONMENT": "development"
+    "ENVIRONMENT": "development",
+    // Mock issuer (dev only, ADR-134). Keep issuer/audience and the public
+    // key in sync with apps/api/dev/mock-issuer/keys.ts. MOCK_JWKS holds
+    // PUBLIC key material only — the private half lives in the committed
+    // dev fixture and signs nothing production trusts (ADR-132).
+    "AUTH_ISSUER": "https://mock-issuer.laya.invalid",
+    "AUTH_AUDIENCE": "laya-api-dev",
+    "MOCK_JWKS": "{\"keys\":[{\"kty\":\"RSA\",\"n\":\"rrAwthawKO5q1pouTujp1wd8pVZCbQSqr7OFlEefEWhJIMWX5ZnNI70NrnnHS4kxjnXNGIPt1P3OJ5ZQfa5M8efjxMhWHN05zSFRshqcao76E3ccxjM73qwfMFaldAs7bJX0isuqcDiDkuOXI59x_mz93RJ7LiS041VnBi-D-as1if1w-BKBYhDrqL2UMj7YSL3uUH3GiHUM699boi_M7J43w5JfEIQE0GrsXBCdYuCctU_3V6niumC2MuLPRHj1fU-v1U4s09wiybljEtIELZbu90sbiyR2JAWYDjIM4nE68WcznD9h3aEbhijk95V5f_ONPJOarU-MVVwaR6w0vQ\",\"e\":\"AQAB\",\"alg\":\"RS256\",\"kid\":\"laya-mock-2026-07\",\"use\":\"sig\"}]}"
   },
   "d1_databases": [
     {

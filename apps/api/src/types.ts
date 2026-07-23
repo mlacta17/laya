@@ -1,4 +1,5 @@
 import type { RequestIdVariables } from "hono/request-id";
+import type { AuthContext } from "./auth/verify-token";
 import type { ValidatedEnv } from "./env";
 
 // Raw bindings as Wrangler provides them — string vars are validated by
@@ -15,5 +16,7 @@ export type AppEnv = {
     // Routes read configuration strings from here after Zod validation.
     // Native platform bindings such as D1 remain available through c.env.
     config: ValidatedEnv;
+    // Set by requireAuth; only routes behind that middleware may read it.
+    auth: AuthContext;
   };
 };
