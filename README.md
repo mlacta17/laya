@@ -16,7 +16,7 @@ Two living documents are the source of truth. Everything else defers to them:
 |---|---|
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | What we're building, how, and **why** — requirements, stack, data model, subsystems, cost model, delivery phases, and the full decision register (ADRs), including reversed decisions and their reasoning |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | The design program — who the users are, information architecture, design phases D0–D5, and definitions of done for every surface |
-| [`docs/phases/`](docs/phases/) | One-page briefs scoping each phase — `active/` holds the current brief (also imported by [`CLAUDE.md`](CLAUDE.md)); `completed/` archives finished briefs with their outcomes |
+| [`docs/phases/`](docs/phases/) | One-page briefs scoping each phase — `active/` holds the current brief (auto-loaded by the agent instruction files); `completed/` archives finished briefs with their outcomes |
 
 **Reading order for a newcomer:** see [`docs/README.md`](docs/README.md) — short version: this README → ARCHITECTURE.md §0–§2 → §12 (where we are) → the active brief in `docs/phases/active/`. The ADR register (§10) answers every "why didn't you just…" question — please read it before proposing changes, because most alternatives were already evaluated and the reasoning is recorded.
 
@@ -45,7 +45,7 @@ Work proceeds in phases (ARCHITECTURE.md §12), each with a one-page brief and a
 1. **Decisions before code.** Any material change — provider, schema, dependency, convention — gets an ADR in ARCHITECTURE.md *before* implementation.
 2. **Docs are canonical in git.** The changelog at the bottom of ARCHITECTURE.md is the freshness key; the copy with the latest row wins.
 
-Most implementation happens with [Claude Code](https://docs.claude.com/en/docs/claude-code/overview); [`CLAUDE.md`](CLAUDE.md) carries its standing instructions.
+Most implementation happens with AI coding agents (Claude Code, Codex). [`AGENTS.md`](AGENTS.md) carries their standing instructions — one canonical file for every tool; [`CLAUDE.md`](CLAUDE.md) is a thin shim that imports it for Claude Code.
 
 ## What you will never find in this repo
 
