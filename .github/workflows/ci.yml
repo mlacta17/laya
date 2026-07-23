@@ -1,0 +1,105 @@
+# CI (PHASE-0A-BRIEF.md scope item 8): typecheck, lint, format check,
+# lockfile validation, test, migration check, build — then deploy the dev
+# environment on main, gated on all of the above. Production deploys stay
+# manual until the production gate (ARCHITECTURE.md §8.3).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# The workflow only needs repository contents. Deployment authentication uses
+# narrowly scoped Cloudflare secrets rather than the GitHub token.
+permissions:
+  contents: read
+
+# Superseded PR checks can stop immediately. Main runs must finish so a newer
+# push cannot interrupt a migration/deploy transition; at most the latest
+# pending main run is retained by GitHub's concurrency queue.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      # Full commit SHAs are immutable; version comments keep updates readable.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # pnpm/action-setup reads the pinned version from package.json's
+      # packageManager field; keep node-version in sync with .npmrc's
+      # use-node-version, which is the authority for local development.
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+
+      # --frozen-lockfile is the lockfile validation: install fails if
+      # pnpm-lock.yaml disagrees with any package.json.
+      - name: Install (validates lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # Also verifies the committed worker-configuration.d.ts matches
+      # wrangler.jsonc (`wrangler types --check`, ADR-136).
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Format check
+        run: pnpm format:check
+
+      # Includes the D1 round-trip against a real local database and the
+      # wrangler.jsonc↔mock-fixture sync tests (ADR-132).
+      - name: Test
+        run: pnpm test
+
+      # The brief's acceptance check: migrations apply cleanly to a fresh
+      # database — the runner has no prior .wrangler state, so this is a
+      # genuinely fresh D1 through Wrangler's real CLI path.
+      - name: Migration check (fresh local D1)
+        run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --local --env=""
+
+      - name: Build web
+        run: pnpm --filter @laya/web build
+        env:
+          VITE_API_URL: http://127.0.0.1:8787
+
+      # Builds the Worker bundle and validates configuration for BOTH
+      # environments without deploying — a broken production block fails CI
+      # even though production is never auto-deployed.
+      - name: Validate Worker deploy (dry run, both environments)
+        run: |
+          pnpm --filter @laya/api exec wrangler deploy --dry-run --env=""
+          pnpm --filter @laya/api exec wrangler deploy --dry-run --env production
+
+  deploy-dev:
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Additive migrations run before the code that expects them.
+      - name: Apply D1 migrations (remote dev database)
+        run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --remote --env=""
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Deploy dev Worker
+        run: pnpm --filter @laya/api run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
