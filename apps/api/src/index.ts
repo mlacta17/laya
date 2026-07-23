@@ -7,12 +7,16 @@ import type { AppEnv } from "./types";
 
 const app = new Hono<AppEnv>();
 
+// Reuses a client-supplied X-Request-Id (sanitized by Hono) or generates a
+// UUID, then echoes it on every response built through the context (c.json
+// and friends, including notFound/onError) — no manual header handling
+// needed. Because clients can choose the value, request ids are tracing
+// hints: never treat them as unique, unguessable, or trusted.
 app.use(requestId());
 
 app.use(async (c, next) => {
   c.set("config", validateEnv(c.env));
   await next();
-  c.res.headers.set("X-Request-Id", c.get("requestId"));
 });
 
 app.route("/v1/health", health);
