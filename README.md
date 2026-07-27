@@ -41,6 +41,23 @@ pnpm workspace with exactly three packages (ARCHITECTURE.md §3.2):
    - `curl -H "Authorization: Bearer <token>" http://localhost:8787/v1/ping-store`
 6. `pnpm typecheck` and `pnpm test` run everything, from the root.
 
+## Development deployment setup
+
+GitHub Actions deploys the development Worker after every successful push to `main`: remote D1 migrations first, then `laya-api-dev`. Production remains manual until the production gate in ARCHITECTURE.md §8.3.
+
+One-time setup:
+
+1. Run `pnpm --filter @laya/api exec wrangler login`, then `pnpm --filter @laya/api exec wrangler whoami` and `pnpm --filter @laya/api exec wrangler d1 list`. Confirm the configured `laya-dev` and `laya` database IDs in `apps/api/wrangler.jsonc` belong to the intended Cloudflare account. Do not create replacements merely because authentication expired.
+2. In that Cloudflare account, create a narrowly scoped API token for CI with account permissions **Workers Scripts: Edit** and **D1: Edit**, restricted to that account. No zone permissions are required for the current `workers.dev` deployment.
+3. In GitHub, open **Settings → Secrets and variables → Actions** and add repository secrets named `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Alternatively, run each command below and paste the value only at its hidden prompt:
+
+   ```sh
+   gh secret set CLOUDFLARE_API_TOKEN
+   gh secret set CLOUDFLARE_ACCOUNT_ID
+   ```
+
+Never put either value in git, `.env`, `.dev.vars`, a command argument, or shell history. After adding or rotating them, re-run the failed `deploy-dev` job from GitHub Actions; there is no need to create an empty commit.
+
 ## Development workflow
 
 Work proceeds in phases (ARCHITECTURE.md §12), each with a one-page brief and a milestone sentence that defines done. Design runs one phase ahead of engineering (DESIGN.md §6). Two rules keep the project coherent:

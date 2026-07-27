@@ -17,6 +17,9 @@
   },
   "vars": {
     "ENVIRONMENT": "development",
+    // Exact browser origin allowed to call /v1 routes (ADR-137). Never use a
+    // wildcard: authenticated routes carry bearer tokens.
+    "WEB_ORIGIN": "http://localhost:5173",
     // Mock issuer (dev only, ADR-134). Keep issuer/audience and the public
     // key in sync with apps/api/dev/mock-issuer/keys.ts. MOCK_JWKS holds
     // PUBLIC key material only — the private half lives in the committed
@@ -46,6 +49,8 @@
       },
       "vars": {
         "ENVIRONMENT": "production",
+        // WEB_ORIGIN is intentionally absent until the production web host
+        // exists. Production therefore permits no browser origin in Phase 0A.
       },
       "d1_databases": [
         {

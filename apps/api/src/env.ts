@@ -7,6 +7,19 @@ import { jwksSchema } from "./auth/jwks-schema";
 const envSchema = z
   .object({
     ENVIRONMENT: z.enum(["development", "production"]),
+    // Exact browser origin allowed by the API's CORS policy (ADR-137).
+    // Production has no deployed web client in Phase 0A, so it may be absent.
+    WEB_ORIGIN: z
+      .string()
+      .url()
+      .refine((value) => {
+        try {
+          return new URL(value).origin === value;
+        } catch {
+          return false;
+        }
+      }, "must be an origin only (scheme + host + optional port, with no path or trailing slash)")
+      .optional(),
 
     // These fields are individually optional so production can have no auth
     // configuration in Phase 0A. superRefine below enforces the valid
@@ -59,6 +72,16 @@ const envSchema = z
     // either an inline key or a URL. Phase 0B deliberately changes this when
     // the real provider is selected.
     if (env.ENVIRONMENT === "production") {
+      if (
+        env.WEB_ORIGIN !== undefined &&
+        !env.WEB_ORIGIN.toLowerCase().startsWith("https://")
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["WEB_ORIGIN"],
+          message: "must use HTTPS in production",
+        });
+      }
       for (const field of authFields) {
         if (env[field] !== undefined) {
           ctx.addIssue({
@@ -69,6 +92,14 @@ const envSchema = z
         }
       }
       return;
+    }
+
+    if (env.WEB_ORIGIN === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["WEB_ORIGIN"],
+        message: "is required in development",
+      });
     }
 
     // Development auth is all-or-nothing, with exactly one public-key source.

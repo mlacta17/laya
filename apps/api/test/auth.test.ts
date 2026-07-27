@@ -25,6 +25,7 @@ const app = createApp(getValidatedEnv);
 // handler, so DB is a stub here.
 const devEnv = {
   ENVIRONMENT: "development",
+  WEB_ORIGIN: "http://localhost:5173",
   AUTH_ISSUER: MOCK_ISSUER,
   AUTH_AUDIENCE: MOCK_AUDIENCE,
   MOCK_JWKS: MOCK_JWKS_JSON,

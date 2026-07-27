@@ -11,6 +11,7 @@ describe("Worker environment validation", () => {
   it("caches successful validation by bindings-object identity", () => {
     const bindings = {
       ENVIRONMENT: "development",
+      WEB_ORIGIN: "http://localhost:5173",
       AUTH_ISSUER: "https://mock-issuer.laya.invalid",
       AUTH_AUDIENCE: "laya-api-dev",
       MOCK_JWKS: '{"keys":[{"kid":"mock","kty":"RSA"}]}',
@@ -37,6 +38,7 @@ describe("Worker environment validation", () => {
   it("accepts the dev mock-issuer configuration and parses MOCK_JWKS", () => {
     const env = validateEnv({
       ENVIRONMENT: "development",
+      WEB_ORIGIN: "http://localhost:5173",
       AUTH_ISSUER: "https://mock-issuer.laya.invalid",
       AUTH_AUDIENCE: "laya-api-dev",
       MOCK_JWKS: '{"keys":[{"kid":"mock","kty":"RSA"}]}',
@@ -54,6 +56,7 @@ describe("Worker environment validation", () => {
     expect(() =>
       validateEnv({
         ENVIRONMENT: "development",
+        WEB_ORIGIN: "http://localhost:5173",
         AUTH_ISSUER: "https://mock-issuer.laya.invalid",
         AUTH_AUDIENCE: "laya-api-dev",
         MOCK_JWKS: mockJwks,
@@ -65,6 +68,7 @@ describe("Worker environment validation", () => {
     expect(
       validateEnv({
         ENVIRONMENT: "development",
+        WEB_ORIGIN: "http://localhost:5173",
         AUTH_ISSUER: "https://provider.example",
         AUTH_AUDIENCE: "laya-api-dev",
         AUTH_JWKS_URL: "https://provider.example/jwks.json",
@@ -87,6 +91,7 @@ describe("Worker environment validation", () => {
     expect(() =>
       validateEnv({
         ENVIRONMENT: "development",
+        WEB_ORIGIN: "http://localhost:5173",
         AUTH_ISSUER: "https://provider.example",
       }),
     ).toThrow("AUTH_AUDIENCE: is required in development");
@@ -96,6 +101,7 @@ describe("Worker environment validation", () => {
     expect(() =>
       validateEnv({
         ENVIRONMENT: "development",
+        WEB_ORIGIN: "http://localhost:5173",
         AUTH_ISSUER: "https://provider.example",
         AUTH_AUDIENCE: "laya-api-dev",
         MOCK_JWKS: '{"keys":[{"kid":"mock","kty":"RSA"}]}',
@@ -106,7 +112,11 @@ describe("Worker environment validation", () => {
 
   it("rejects a non-URL AUTH_JWKS_URL", () => {
     expect(() =>
-      validateEnv({ ENVIRONMENT: "development", AUTH_JWKS_URL: "not a url" }),
+      validateEnv({
+        ENVIRONMENT: "development",
+        WEB_ORIGIN: "http://localhost:5173",
+        AUTH_JWKS_URL: "not a url",
+      }),
     ).toThrow("Invalid Worker environment configuration");
   });
 
@@ -114,10 +124,49 @@ describe("Worker environment validation", () => {
     expect(() =>
       validateEnv({
         ENVIRONMENT: "development",
+        WEB_ORIGIN: "http://localhost:5173",
         AUTH_ISSUER: "https://provider.example",
         AUTH_AUDIENCE: "laya-api-dev",
         AUTH_JWKS_URL: "http://provider.example/jwks.json",
       }),
     ).toThrow("AUTH_JWKS_URL: must use HTTPS");
+  });
+
+  it("requires the browser origin in development", () => {
+    expect(() =>
+      validateEnv({
+        ENVIRONMENT: "development",
+        AUTH_ISSUER: "https://mock-issuer.laya.invalid",
+        AUTH_AUDIENCE: "laya-api-dev",
+        MOCK_JWKS: '{"keys":[{"kid":"mock","kty":"RSA"}]}',
+      }),
+    ).toThrow("WEB_ORIGIN: is required in development");
+  });
+
+  it("accepts an exact production web origin when one is deployed", () => {
+    expect(
+      validateEnv({
+        ENVIRONMENT: "production",
+        WEB_ORIGIN: "https://laya.example",
+      }).WEB_ORIGIN,
+    ).toBe("https://laya.example");
+  });
+
+  it("rejects a web URL that is not an exact origin", () => {
+    expect(() =>
+      validateEnv({
+        ENVIRONMENT: "production",
+        WEB_ORIGIN: "https://laya.example/app",
+      }),
+    ).toThrow("WEB_ORIGIN: must be an origin only");
+  });
+
+  it("requires HTTPS for a production web origin", () => {
+    expect(() =>
+      validateEnv({
+        ENVIRONMENT: "production",
+        WEB_ORIGIN: "http://laya.example",
+      }),
+    ).toThrow("WEB_ORIGIN: must use HTTPS in production");
   });
 });
