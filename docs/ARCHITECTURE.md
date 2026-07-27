@@ -1,6 +1,6 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.3.6 D1 baseline · July 27, 2026*
+*Private streaming platform · v1.3.7 D1 baseline · July 27, 2026*
 *This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, progress keyed to a provider video asset, or browser subtitle extraction as already proven as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
 
 ---
@@ -182,6 +182,7 @@ D1 uses SQLite-compatible SQL rather than PostgreSQL. The project uses one conve
 - Foreign keys are declared and enforced; destructive cascades require explicit review.
 - Every query uses prepared statements and bound parameters.
 - Multi-statement state changes use D1 `batch()` so failures roll back the full sequence.
+- Migrations are numbered, forward-only, and ordered expand/contract: because CI applies migrations before deploying the Worker, a merged migration must be safe against the *currently deployed* code — additive changes merge with the code that needs them; destructive changes (drops, renames) merge only after the code that stopped using the schema is already deployed. Migration 0002 knowingly bent this in dev for the disposable ping table; real data never gets that shortcut.
 - Large binaries, artwork and caption bodies do not live in D1; D1 stores metadata and provider/object keys only.
 
 D1's paid-plan constraints are design inputs: 10 GB maximum per database and a single-threaded primary. They are comfortably above this private workload, but raw playback telemetry must be aggregated or expired rather than retained without bound.
@@ -645,6 +646,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.3.4 | Jul 22, 2026 | Phase 0A verification hardening: ADR-136 now uses Wrangler's non-mutating generated-type check during typecheck; the deployed entrypoint validates environment/JWKS configuration once at Worker module startup while the test app caches by bindings identity; token redaction is regression-tested; configuration-integrity tests use Wrangler's JSONC parser; generated declarations are excluded from formatting. |
 | v1.3.5 | Jul 22, 2026 | Phase 0A browser-path review: ADR-137 adds an exact, environment-validated web-origin CORS policy after the health page exposed that build/API tests did not exercise the browser's cross-origin enforcement. |
 | v1.3.6 | Jul 27, 2026 | Phase 0A passed deployed development and production acceptance. Its disposable ping route, contract, and table are removed through forward-only migration 0002 while test-only coverage preserves the reusable authenticated-D1 pattern. Phase 0A is archived and the bounded Phase 0B risk-spike brief is active. |
+| v1.3.7 | Jul 27, 2026 | Post-0A repository review applied: §4.0 records the expand/contract migration-ordering rule (CI migrates before deploying, so destructive migrations merge one step behind the code change — surfaced when migration 0002 briefly left the old dev Worker pointing at a dropped table). Repo hygiene alongside: `.gitattributes` pins LF so the Prettier gate passes identically on Windows and CI; the test D1 helper self-checks its migration list against `migrations/`; shared test-app wiring deduplicated. |
 
 ---
 

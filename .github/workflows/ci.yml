@@ -91,7 +91,13 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Additive migrations run before the code that expects them.
+      # Migrations always apply BEFORE the deploy that follows, so a merged
+      # migration must be safe against the currently deployed Worker
+      # (expand/contract, ARCHITECTURE.md §4.0): additive changes merge with
+      # the code that needs them; destructive changes merge only after the
+      # code that stopped using the schema is already deployed. This pipeline
+      # cannot reorder itself per migration — the ordering rule is enforced
+      # at review time.
       - name: Apply D1 migrations (remote dev database)
         run: pnpm --filter @laya/api exec wrangler d1 migrations apply DB --remote --env=""
         env:
