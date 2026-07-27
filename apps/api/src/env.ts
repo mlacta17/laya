@@ -8,7 +8,7 @@ const envSchema = z
   .object({
     ENVIRONMENT: z.enum(["development", "production"]),
     // Exact browser origin allowed by the API's CORS policy (ADR-137).
-    // Production has no deployed web client in Phase 0A, so it may be absent.
+    // Production has no deployed web client yet, so it may be absent.
     WEB_ORIGIN: z
       .string()
       .url()
@@ -22,8 +22,8 @@ const envSchema = z
       .optional(),
 
     // These fields are individually optional so production can have no auth
-    // configuration in Phase 0A. superRefine below enforces the valid
-    // environment-specific combinations.
+    // configuration before the real provider is integrated. superRefine
+    // below enforces the valid environment-specific combinations.
     AUTH_ISSUER: z.string().url().optional(),
     AUTH_AUDIENCE: z.string().min(1).optional(),
 
@@ -67,10 +67,10 @@ const envSchema = z
       "AUTH_JWKS_URL",
     ] as const;
 
-    // ADR-132/134: Phase 0A production has no issuer at all. Reject every
+    // ADR-132/134: pre-provider production has no issuer at all. Reject every
     // auth field so production cannot trust the committed mock fixture through
-    // either an inline key or a URL. Phase 0B deliberately changes this when
-    // the real provider is selected.
+    // either an inline key or a URL. A later implementation deliberately
+    // changes this only after Phase 0B selects the real provider.
     if (env.ENVIRONMENT === "production") {
       if (
         env.WEB_ORIGIN !== undefined &&
@@ -87,7 +87,8 @@ const envSchema = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: [field],
-            message: "must not be set in Phase 0A production (ADR-132/ADR-134)",
+            message:
+              "must not be set in pre-provider production (ADR-132/ADR-134)",
           });
         }
       }

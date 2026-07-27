@@ -5,7 +5,7 @@
 // verify the same tokens. It protects nothing. Production can never trust
 // tokens signed with it because production environment validation rejects
 // the MOCK_JWKS variable outright (ADR-132 / ADR-134) and production has no
-// issuer configured at all until Phase 0B.
+// issuer configured until an accepted provider is integrated after Phase 0B.
 //
 // Keep MOCK_ISSUER, MOCK_AUDIENCE and the public key in sync with the dev
 // `vars` block in apps/api/wrangler.jsonc.

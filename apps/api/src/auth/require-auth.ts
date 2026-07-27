@@ -13,7 +13,8 @@ import { verifyAccessToken } from "./verify-token";
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   const authConfig = getAuthConfig(c.var.config);
   if (!authConfig) {
-    // Production's permanent state until Phase 0B picks a provider (ADR-134).
+    // Production's fail-closed state until an accepted provider is integrated
+    // after Phase 0B (ADR-134).
     return unauthorized(c, "auth_not_configured");
   }
 

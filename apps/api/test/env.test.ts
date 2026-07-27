@@ -81,10 +81,10 @@ describe("Worker environment validation", () => {
     ["AUTH_AUDIENCE", "laya-api-dev"],
     ["MOCK_JWKS", '{"keys":[{"kid":"mock","kty":"RSA"}]}'],
     ["AUTH_JWKS_URL", "https://mock.example/jwks.json"],
-  ])("structurally rejects %s in Phase 0A production", (field, value) => {
+  ])("structurally rejects %s in pre-provider production", (field, value) => {
     expect(() =>
       validateEnv({ ENVIRONMENT: "production", [field]: value }),
-    ).toThrow("must not be set in Phase 0A production");
+    ).toThrow("must not be set in pre-provider production");
   });
 
   it("rejects incomplete development auth configuration", () => {

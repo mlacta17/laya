@@ -1,7 +1,7 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.3 D1 baseline · July 22, 2026*
-*This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, progress keyed to a provider video asset, or browser subtitle extraction as already proven as a current decision, it is stale. Companion: DESIGN.md v0.2 (design program, phases D0–D5).*
+*Private streaming platform · v1.3.6 D1 baseline · July 27, 2026*
+*This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, progress keyed to a provider video asset, or browser subtitle extraction as already proven as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
 
 ---
 
@@ -581,7 +581,7 @@ Composition at 100 users (conservative): Bunny ~$79 (storage $40 + delivery $39)
 
 | Phase | Ships | Milestone sentence | Done |
 |---|---|---|---|
-| **0A · Skeleton** (days) | pnpm workspace, local D1, Worker binding, Vite app, CI, mock JWT issuer, first D1 migrations, deployed health/read-write path | "The API can authenticate a test token and read/write through D1" | |
+| **0A · Skeleton** (days) | pnpm workspace, local D1, Worker binding, Vite app, CI, mock JWT issuer, first D1 migrations, deployed health/read-write path | "The API can authenticate a test token and read/write through D1" | Jul 27, 2026 |
 | **0B · Risk spikes** (time-boxed ≤1 week) | Auth0-vs-Clerk browser/Expo spike and decision; invitation/revocation path; subtitle extraction matrix; duplicate-language Bunny caption test; representative encoding-size sample | "The auth, provider and browser unknowns have written go/no-go results" | |
 | **1 · First light** | Selected managed auth, admin TUS upload → Bunny → browser playback, stable playable record, progress saved, sidecar subtitles; embedded extraction only if 0B passed | "An invited user logs in, a movie plays with subtitles, and progress persists" | |
 | **2 · Catalog** (largest) | Filename parse → TMDB → attribution/cache handling → artwork → series model → repair queue | "Uploads become real titles with posters, on their own" | |
@@ -644,6 +644,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.3.3 | Jul 22, 2026 | Phase 0A hardening review applied: ADR-136 (generated Worker binding types) added; Workers observability enabled in both environments (§3.2 structured-logs commitment made real); `MOCK_JWKS` shape validation moved into startup env validation; JWKS fetch failures now log their detail (only that error class — JWT error messages embed raw tokens); wrangler.jsonc↔mock-fixture sync and production-block purity enforced by tests; §13.12 JWKS-refresh-cooldown gate recorded for 0B. |
 | v1.3.4 | Jul 22, 2026 | Phase 0A verification hardening: ADR-136 now uses Wrangler's non-mutating generated-type check during typecheck; the deployed entrypoint validates environment/JWKS configuration once at Worker module startup while the test app caches by bindings identity; token redaction is regression-tested; configuration-integrity tests use Wrangler's JSONC parser; generated declarations are excluded from formatting. |
 | v1.3.5 | Jul 22, 2026 | Phase 0A browser-path review: ADR-137 adds an exact, environment-validated web-origin CORS policy after the health page exposed that build/API tests did not exercise the browser's cross-origin enforcement. |
+| v1.3.6 | Jul 27, 2026 | Phase 0A passed deployed development and production acceptance. Its disposable ping route, contract, and table are removed through forward-only migration 0002 while test-only coverage preserves the reusable authenticated-D1 pattern. Phase 0A is archived and the bounded Phase 0B risk-spike brief is active. |
 
 ---
 
@@ -657,10 +658,11 @@ Official sources behind the current load-bearing external claims:
 - D1 data location and read replication: <https://developers.cloudflare.com/d1/configuration/data-location/> and <https://developers.cloudflare.com/d1/best-practices/read-replication/>
 - D1 Time Travel and import/export: <https://developers.cloudflare.com/d1/reference/time-travel/> and <https://developers.cloudflare.com/d1/best-practices/import-export-data/>
 - D1 foreign keys and batch behavior: <https://developers.cloudflare.com/d1/sql-api/foreign-keys/> and <https://developers.cloudflare.com/d1/worker-api/d1-database/#batch>
-- Auth0 pricing/features candidate reference: <https://auth0.com/pricing>
-- Clerk pricing candidate reference: <https://clerk.com/pricing>
-- Bunny Stream pricing and replication: <https://docs.bunny.net/stream/pricing> and <https://docs.bunny.net/stream/replication>
-- Bunny caption API and play data: <https://docs.bunny.net/api-reference/stream/manage-videos/add-caption> and <https://docs.bunny.net/api-reference/stream/manage-videos/get-video-play-data>
+- Auth0 React and Expo quickstarts and pricing: <https://auth0.com/docs/quickstart/spa/react>, <https://auth0.com/docs/quickstart/native/react-native-expo>, and <https://auth0.com/pricing>
+- Clerk React and Expo quickstarts, session revocation, and pricing: <https://clerk.com/docs/react/getting-started/quickstart>, <https://clerk.com/docs/expo/getting-started/quickstart>, <https://clerk.com/docs/reference/backend/sessions/revoke-session>, and <https://clerk.com/pricing>
+- Expo authentication and AuthSession: <https://docs.expo.dev/develop/authentication/> and <https://docs.expo.dev/versions/latest/sdk/auth-session/>
+- Bunny Stream caption management, replication, and pricing: <https://docs.bunny.net/api-reference/stream/manage-videos/add-caption>, <https://docs.bunny.net/reference/video_deletecaption>, <https://docs.bunny.net/stream/replication>, and <https://docs.bunny.net/stream/pricing>
+- Bunny Stream play data: <https://docs.bunny.net/api-reference/stream/manage-videos/get-video-play-data>
 - Bunny multi-audio: <https://docs.bunny.net/stream/multi-audio>
 - Expo FileSystem behavior: <https://docs.expo.dev/versions/latest/sdk/filesystem/>
 - TMDB API use, attribution and cache restrictions: <https://developer.themoviedb.org/docs/faq> and <https://www.themoviedb.org/api-terms-of-use>

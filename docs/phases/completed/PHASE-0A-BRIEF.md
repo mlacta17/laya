@@ -2,6 +2,16 @@
 
 *Project Laya · Brief v1.1 · Working document, archived on completion — authority lives in ARCHITECTURE.md v1.3 and DESIGN.md v0.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
+> **Status:** Complete
+>
+> **Completed:** July 27, 2026
+>
+> **Milestone commit:** `b4f1411`
+>
+> **Outcome:** Passed with amendments
+>
+> **Learnings:** ADR-134, ADR-135, ADR-136, ADR-137
+
 ---
 
 ## Milestone (the only definition of done)
@@ -32,13 +42,22 @@ The §4 data model beyond `ping` (no profiles/titles/playables tables). Any Bunn
 
 ## Acceptance checks
 
-- [ ] Fresh clone → README quickstart → local stack running with one command in under 15 minutes.
-- [ ] `pnpm test` green; CI green on a PR; deploy succeeds on main.
-- [ ] Deployed (dev) `GET /v1/health` returns 200 with requestId.
-- [ ] **The production Worker configuration cannot validate a mock-issuer token** — verified by inspection of production config (no mock audience/JWKS/key present) and by a failing request test where feasible.
-- [ ] `PUT /v1/ping-store` with a valid mock JWT upserts the caller-subject row in dev D1; `GET` returns only that row; the full rejection matrix in scope item 10 returns 401/400 with the standard error envelope.
-- [ ] Migration 0001 applies cleanly to a fresh database, locally and remotely, and demonstrates ADR-129 conventions.
-- [ ] Zero TODOs referencing out-of-scope features; no unused dependencies.
+- [x] Fresh clone → README quickstart → local stack running with one command in under 15 minutes.
+- [x] `pnpm test` green; CI green on a PR; deploy succeeds on main.
+- [x] Deployed (dev) `GET /v1/health` returns 200 with requestId.
+- [x] **The production Worker configuration cannot validate a mock-issuer token** — verified by inspection of production config (no mock audience/JWKS/key present) and by a failing request test where feasible.
+- [x] `PUT /v1/ping-store` with a valid mock JWT upserts the caller-subject row in dev D1; `GET` returns only that row; the full rejection matrix in scope item 10 returns 401/400 with the standard error envelope.
+- [x] Migration 0001 applies cleanly to a fresh database, locally and remotely, and demonstrates ADR-129 conventions.
+- [x] Zero TODOs referencing out-of-scope features; no unused dependencies.
+
+## Completion evidence
+
+- GitHub Actions run [30281014204](https://github.com/mlacta17/laya/actions/runs/30281014204) passed `quality` and `deploy-dev`.
+- The deployed development Worker returned health `ok`, and the browser app reached it successfully.
+- A valid development token for subject `phase-0a-acceptance` wrote and read `phase-0a-remote-ok` through the deployed development Worker and D1.
+- The production Worker returned health `ok` and rejected that development mock token with `401`.
+- Local, development, and production migration checks reported no pending migrations after migration 0001 was applied.
+- Sign-off cleanup uses forward-only migration 0002 to remove the disposable `ping` table. The route and shared contract are removed; test-only coverage retains the reusable authentication, validation, prepared-statement, subject-isolation, and timestamp patterns.
 
 ## Non-goals of this brief
 
