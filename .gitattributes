@@ -1,0 +1,7 @@
+# All text files are stored AND checked out with LF line endings.
+#
+# Prettier enforces LF (its endOfLine default), so without this a Windows
+# clone with core.autocrlf=true checks files out as CRLF and `pnpm
+# format:check` fails locally while CI (Linux, LF) passes. Pinning eol=lf
+# makes every platform's working tree identical to what the tools verify.
+* text=auto eol=lf
