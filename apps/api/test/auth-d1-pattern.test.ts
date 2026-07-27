@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { Hono } from "hono";
-import { requestId } from "hono/request-id";
 import { errorEnvelopeSchema } from "@laya/shared";
 import { z } from "zod";
 import {
@@ -9,11 +7,10 @@ import {
   MOCK_JWKS_JSON,
 } from "../dev/mock-issuer/keys";
 import { requireAuth } from "../src/auth/require-auth";
-import { getValidatedEnv } from "../src/env";
 import { errorResponse } from "../src/errors";
 import { uuidv7 } from "../src/lib/uuidv7";
-import type { AppEnv } from "../src/types";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
+import { buildTestApp } from "./helpers/test-app";
 import { createTestDb } from "./helpers/test-db";
 
 // This test-only route preserves Phase 0A's reference implementation for the
@@ -46,12 +43,7 @@ function toResponse(row: ProbeRow) {
   };
 }
 
-const app = new Hono<AppEnv>();
-app.use(requestId());
-app.use(async (c, next) => {
-  c.set("config", getValidatedEnv(c.env));
-  await next();
-});
+const app = buildTestApp();
 app.use("/probe", requireAuth);
 app.get("/probe", async (c) => {
   const row = await c.env.DB.prepare(

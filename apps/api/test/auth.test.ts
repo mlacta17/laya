@@ -1,6 +1,4 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Hono } from "hono";
-import { requestId } from "hono/request-id";
 import { errorEnvelopeSchema } from "@laya/shared";
 import {
   MOCK_AUDIENCE,
@@ -15,20 +13,14 @@ import {
   JwksFetchError,
 } from "../src/auth/jwks";
 import { verifyAccessToken } from "../src/auth/verify-token";
-import { getValidatedEnv } from "../src/env";
-import type { AppEnv } from "../src/types";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
 import { ROGUE_PRIVATE_JWK } from "./helpers/rogue-key";
+import { buildTestApp } from "./helpers/test-app";
 
 // Authentication is exercised through a deliberately test-only protected
 // route. This keeps the complete rejection contract without retaining a
 // disposable Phase 0A endpoint in the deployed Worker.
-const app = new Hono<AppEnv>();
-app.use(requestId());
-app.use(async (c, next) => {
-  c.set("config", getValidatedEnv(c.env));
-  await next();
-});
+const app = buildTestApp();
 app.get("/protected", requireAuth, (c) =>
   c.json({ subject: c.var.auth.subject }),
 );
