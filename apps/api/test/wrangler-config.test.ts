@@ -45,7 +45,7 @@ describe("wrangler.jsonc dev vars", () => {
 });
 
 describe("wrangler.jsonc production environment (ADR-132/ADR-134)", () => {
-  it("declares no auth vars at all in Phase 0A", () => {
+  it("declares no auth vars in pre-provider production", () => {
     expect(Object.keys(productionConfig.vars)).toEqual(["ENVIRONMENT"]);
   });
 

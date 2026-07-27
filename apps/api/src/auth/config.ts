@@ -10,10 +10,11 @@ export type AuthConfig = {
 };
 
 // Derives the verifier's configuration from validated env vars, or null when
-// auth is not configured — production's state until Phase 0B (ADR-134), in
-// which case every authenticated request is rejected with 401. MOCK_JWKS is
-// already parsed and shape-checked by src/env.ts, so a broken fixture fails
-// at Worker module startup rather than here.
+// auth is not configured. Production remains in that fail-closed state until
+// an accepted provider is integrated after Phase 0B (ADR-134), so every
+// authenticated request receives 401. MOCK_JWKS is already parsed and
+// shape-checked by src/env.ts, so a broken fixture fails at Worker module
+// startup rather than here.
 export function getAuthConfig(env: ValidatedEnv): AuthConfig | null {
   if (env.ENVIRONMENT === "production") {
     return null;

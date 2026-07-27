@@ -7,7 +7,6 @@ import type { ValidatedEnv } from "./env";
 import { errorResponse } from "./errors";
 import { devJwks } from "./routes/dev-jwks";
 import { health } from "./routes/health";
-import { pingStore } from "./routes/ping-store";
 import type { AppEnv } from "./types";
 
 // §3.3: explicit maximum request-body size; media bytes are rejected by the
@@ -22,7 +21,7 @@ function corsForOrigin(allowedOrigin?: string): MiddlewareHandler<AppEnv> {
   // returned middleware to this app's shared environment at the boundary.
   return cors({
     origin: allowedOrigin ? [allowedOrigin] : [],
-    allowMethods: ["GET", "HEAD", "PUT", "OPTIONS"],
+    allowMethods: ["GET", "HEAD", "OPTIONS"],
     allowHeaders: ["Authorization", "Content-Type", "X-Request-Id"],
     exposeHeaders: ["X-Request-Id"],
     maxAge: 600,
@@ -71,7 +70,6 @@ export function createApp(resolveConfig: ConfigResolver): Hono<AppEnv> {
   );
 
   app.route("/v1/health", health);
-  app.route("/v1/ping-store", pingStore);
   app.route("/dev/.well-known/jwks.json", devJwks);
 
   app.notFound((c) => errorResponse(c, 404, "not_found", "Route not found"));

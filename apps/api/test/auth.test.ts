@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { Hono } from "hono";
+import { requestId } from "hono/request-id";
 import { errorEnvelopeSchema } from "@laya/shared";
 import {
   MOCK_AUDIENCE,
@@ -6,7 +8,7 @@ import {
   MOCK_JWKS_JSON,
   MOCK_PUBLIC_JWK,
 } from "../dev/mock-issuer/keys";
-import { createApp } from "../src/app";
+import { requireAuth } from "../src/auth/require-auth";
 import {
   clearJwksCache,
   getSigningKeys,
@@ -14,15 +16,27 @@ import {
 } from "../src/auth/jwks";
 import { verifyAccessToken } from "../src/auth/verify-token";
 import { getValidatedEnv } from "../src/env";
+import type { AppEnv } from "../src/types";
 import { mintToken, TEST_SUBJECT } from "./helpers/mock-tokens";
 import { ROGUE_PRIVATE_JWK } from "./helpers/rogue-key";
 
-const app = createApp(getValidatedEnv);
+// Authentication is exercised through a deliberately test-only protected
+// route. This keeps the complete rejection contract without retaining a
+// disposable Phase 0A endpoint in the deployed Worker.
+const app = new Hono<AppEnv>();
+app.use(requestId());
+app.use(async (c, next) => {
+  c.set("config", getValidatedEnv(c.env));
+  await next();
+});
+app.get("/protected", requireAuth, (c) =>
+  c.json({ subject: c.var.auth.subject }),
+);
 
 // The JWT rejection matrix (brief scope item 10) — the inherited pattern for
-// every future authenticated route. The "accept the valid case" half lives
-// in ping-store.test.ts as the round-trip. Rejections never reach the route
-// handler, so DB is a stub here.
+// every future authenticated route. The valid auth-to-D1 case lives in
+// auth-d1-pattern.test.ts. Rejections never reach the route handler, so DB
+// is a stub here.
 const devEnv = {
   ENVIRONMENT: "development",
   WEB_ORIGIN: "http://localhost:5173",
@@ -46,7 +60,7 @@ async function requestWithAuth(
 ) {
   const init =
     header === undefined ? {} : { headers: { Authorization: header } };
-  return app.request("/v1/ping-store", init, env);
+  return app.request("/protected", init, env);
 }
 
 async function expectUnauthorized(res: Response) {
@@ -191,7 +205,7 @@ describe("JWT rejection matrix", () => {
     );
   });
 
-  it("rejects everything when auth is not configured (production until 0B, ADR-134)", async () => {
+  it("rejects everything in pre-provider production (ADR-134)", async () => {
     silenceWarn();
     const env = { ENVIRONMENT: "production", DB: {} as D1Database };
     const token = await mintToken();

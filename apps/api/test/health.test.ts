@@ -67,14 +67,14 @@ describe("CORS policy (ADR-137)", () => {
     expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
 
-  it("answers the authenticated PUT preflight without invoking auth", async () => {
+  it("answers an authorized GET preflight", async () => {
     const res = await app.request(
-      "/v1/ping-store",
+      "/v1/health",
       {
         method: "OPTIONS",
         headers: {
           Origin: devEnv.WEB_ORIGIN,
-          "Access-Control-Request-Method": "PUT",
+          "Access-Control-Request-Method": "GET",
           "Access-Control-Request-Headers":
             "authorization, content-type, x-request-id",
         },
@@ -86,7 +86,7 @@ describe("CORS policy (ADR-137)", () => {
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
       devEnv.WEB_ORIGIN,
     );
-    expect(res.headers.get("Access-Control-Allow-Methods")).toContain("PUT");
+    expect(res.headers.get("Access-Control-Allow-Methods")).toContain("GET");
     expect(res.headers.get("Access-Control-Allow-Headers")).toBe(
       "Authorization,Content-Type,X-Request-Id",
     );
@@ -150,7 +150,7 @@ describe("error envelope", () => {
 
   it("returns the standard 413 envelope when the global body limit is exceeded", async () => {
     const res = await app.request(
-      "/v1/ping-store",
+      "/v1/does-not-exist",
       {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

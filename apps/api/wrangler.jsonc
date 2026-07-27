@@ -37,10 +37,10 @@
     },
   ],
   "env": {
-    // Production: deployed from Phase 0A with NO issuer configured — every
-    // authenticated request 401s until Phase 0B selects the real provider
-    // (ADR-134). Never add mock-issuer audience, JWKS URL or key here
-    // (ADR-132).
+    // Production was deployed in Phase 0A with NO issuer configured. Every
+    // authenticated request 401s until the Phase 0B-selected provider is
+    // integrated (ADR-134). Never add mock-issuer audience, JWKS URL or key
+    // here (ADR-132).
     "production": {
       "name": "laya-api",
       "observability": {
@@ -50,7 +50,7 @@
       "vars": {
         "ENVIRONMENT": "production",
         // WEB_ORIGIN is intentionally absent until the production web host
-        // exists. Production therefore permits no browser origin in Phase 0A.
+        // exists. Production therefore permits no browser origin yet.
       },
       "d1_databases": [
         {
