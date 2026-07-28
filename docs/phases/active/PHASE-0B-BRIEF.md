@@ -1,6 +1,6 @@
 # Phase 0B Brief — Risk spikes
 
-*Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.6 and DESIGN.md v0.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
+*Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.7 and DESIGN.md v0.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
 ---
 
