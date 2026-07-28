@@ -21,6 +21,11 @@ function corsForOrigin(allowedOrigin?: string): MiddlewareHandler<AppEnv> {
   // returned middleware to this app's shared environment at the boundary.
   return cors({
     origin: allowedOrigin ? [allowedOrigin] : [],
+    // Exactly the methods the registered /v1 routes accept today. When a new
+    // route introduces a method (POST, PUT, …), widen this list and add a
+    // preflight test beside the route's tests — browsers enforce this list,
+    // but same-origin API tests never exercise it, so a stale entry only
+    // breaks in a real browser.
     allowMethods: ["GET", "HEAD", "OPTIONS"],
     allowHeaders: ["Authorization", "Content-Type", "X-Request-Id"],
     exposeHeaders: ["X-Request-Id"],
