@@ -4,6 +4,7 @@ import {
   MOCK_AUDIENCE,
   MOCK_ISSUER,
   MOCK_JWKS_JSON,
+  MOCK_PRIVATE_JWK,
   MOCK_PUBLIC_JWK,
 } from "../dev/mock-issuer/keys";
 import { requireAuth } from "../src/auth/require-auth";
@@ -41,6 +42,7 @@ const devEnv = {
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   clearJwksCache();
@@ -99,6 +101,18 @@ describe("JWT rejection matrix", () => {
     silenceWarn();
     const token = await mintToken({ aud: "some-other-api" });
     await expectUnauthorized(await requestWithAuth(`Bearer ${token}`));
+  });
+
+  it("accepts the configured audience within a provider audience array", async () => {
+    const token = await mintToken({
+      // Auth0 access tokens observed in Phase 0B include both the requested
+      // API audience and the tenant's /userinfo audience.
+      aud: [MOCK_AUDIENCE, `${MOCK_ISSUER}userinfo`],
+    });
+
+    const response = await requestWithAuth(`Bearer ${token}`);
+
+    expect(response.status).toBe(200);
   });
 
   it("rejects an invalid signature (right kid, wrong key)", async () => {
@@ -255,6 +269,77 @@ describe("JWKS fetch and cache (real-provider path)", () => {
     await getSigningKeys(urlSource);
     await getSigningKeys(urlSource, { forceRefresh: true });
 
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("rate-limits forced refreshes to once per five minutes", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28T12:00:00.000Z"));
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(jwksResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getSigningKeys(urlSource);
+    await getSigningKeys(urlSource, { forceRefresh: true });
+    await getSigningKeys(urlSource, { forceRefresh: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.advanceTimersByTime(5 * 60 * 1000);
+    await getSigningKeys(urlSource, { forceRefresh: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not let sequential unknown kids amplify provider fetches", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(() => Promise.resolve(jwksResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    const config = {
+      issuer: MOCK_ISSUER,
+      audience: MOCK_AUDIENCE,
+      keySource: urlSource,
+    };
+    const firstGarbageToken = await mintToken(
+      {},
+      { ...MOCK_PRIVATE_JWK, kid: "garbage-a" },
+    );
+    const secondGarbageToken = await mintToken(
+      {},
+      { ...MOCK_PRIVATE_JWK, kid: "garbage-b" },
+    );
+
+    await expect(
+      verifyAccessToken(firstGarbageToken, config),
+    ).rejects.toThrow();
+    await expect(
+      verifyAccessToken(secondGarbageToken, config),
+    ).rejects.toThrow();
+
+    // One cold fetch plus one permitted forced refresh. The second distinct
+    // garbage kid reuses the cached set during ADR-138's cooldown.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts the cooldown even when a forced refresh fails", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jwksResponse())
+      .mockRejectedValueOnce(new Error("provider unavailable"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const initialKeys = await getSigningKeys(urlSource);
+    await expect(
+      getSigningKeys(urlSource, { forceRefresh: true }),
+    ).rejects.toBeInstanceOf(JwksFetchError);
+
+    const cooledDownKeys = await getSigningKeys(urlSource, {
+      forceRefresh: true,
+    });
+
+    expect(cooledDownKeys).toBe(initialKeys);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

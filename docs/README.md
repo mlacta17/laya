@@ -11,3 +11,9 @@ You do not need to read everything to contribute. Read what your task needs, in 
 The master documents remain authoritative over everything, including briefs. But the brief is the bounded reading path: nobody should have to read a 650-line architecture document to change a health endpoint — and nobody should change the database without reading §4.
 
 `glossary.md` defines the handful of project-specific terms (playable, brief, spike, ADR) that appear everywhere else.
+
+## Current phase evidence
+
+Phase 0B observations and go/no-go results live in
+[`spikes/phase-0b/`](spikes/phase-0b/README.md). Start with that directory's
+README before running or recording a provider experiment.
