@@ -6,9 +6,11 @@ import { jwksSchema, type JwksKey } from "./jwks-schema";
 // we do not hit the provider on every request.
 const JWKS_CACHE_TTL_MS = 5 * 60 * 1000;
 const JWKS_FETCH_TIMEOUT_MS = 5 * 1000;
+const JWKS_FORCED_REFRESH_COOLDOWN_MS = 5 * 60 * 1000;
 
 let cache: { url: string; keys: JwksKey[]; fetchedAt: number } | null = null;
 let inFlight: { url: string; promise: Promise<JwksKey[]> } | null = null;
+let lastForcedRefresh: { url: string; attemptedAt: number } | null = null;
 
 // Thrown so the middleware can log the real reason; the client still gets
 // the generic 401 envelope (the JWKS being down is not their fault to see).
@@ -36,6 +38,22 @@ export async function getSigningKeys(
   // Share one provider request instead of creating a small fetch stampede.
   if (inFlight?.url === keySource.url) {
     return inFlight.promise;
+  }
+
+  // ADR-138: an attacker can cheaply mint structurally valid tokens with a
+  // new garbage kid each time. Permit one forced lookup for real key rotation,
+  // then reuse the cached set during the cooldown so sequential garbage cannot
+  // turn verification into an unbounded provider-request amplifier. Record the
+  // attempt before fetching: provider outages must not bypass the limit.
+  if (options.forceRefresh && cache?.url === keySource.url) {
+    const forcedRefreshCoolingDown =
+      lastForcedRefresh?.url === keySource.url &&
+      Date.now() - lastForcedRefresh.attemptedAt <
+        JWKS_FORCED_REFRESH_COOLDOWN_MS;
+    if (forcedRefreshCoolingDown) {
+      return cache.keys;
+    }
+    lastForcedRefresh = { url: keySource.url, attemptedAt: Date.now() };
   }
 
   const promise = fetchSigningKeys(keySource.url);
@@ -82,4 +100,5 @@ async function fetchSigningKeys(url: string): Promise<JwksKey[]> {
 export function clearJwksCache(): void {
   cache = null;
   inFlight = null;
+  lastForcedRefresh = null;
 }
