@@ -206,9 +206,54 @@ Procedure and observations:
 The old access token's Worker behavior and server-side session revocation are
 separate tests.
 
+## AUTH-13 and AUTH-14 application authorization
+
+Result: **Pass through provider-neutral Laya evidence**
+
+These gates do not depend on an Auth0-specific membership feature. The
+[invitation and revocation contract](invitation-revocation.md) defines Auth0 as
+the authenticator and Laya membership as the authorization boundary. The
+repository test `apps/api/test/auth-membership-boundary.test.ts` proves that:
+
+- a valid provider token without Laya membership receives HTTP 403;
+- identity mapping without active membership still receives HTTP 403;
+- active membership permits the same token; and
+- removing membership denies that still-valid token without changing the
+  provider account.
+
+The model keys external identity by `(issuer, subject)`, not email or subject
+alone. This is Phase 0B boundary evidence, not a production invitation schema
+or route.
+
+## AUTH-17 account recovery
+
+Result: **Pass for the tested browser methods, with operator escalation**
+
+The controlled passwordless tests exercised both ordinary and failure recovery:
+a consumed code was rejected, a newly issued code then completed sign-in, and
+an expired code was rejected without damaging the account. Google sign-in also
+provides a separate provider-owned authentication method for an identity that
+has that connection.
+
+Laya does not reset provider credentials. A user who still controls an enabled
+provider method starts a new provider-owned sign-in transaction. Loss of the
+only provider identity, conflicting same-email Auth0 profiles, or identity
+relinking escalates to the Laya operator. The operator may revoke/reissue an
+invitation or perform a future audited relink; Laya must never auto-link by
+email.
+
+Auth0 documents passwordless as a separate connection and warns that the same
+email used through different connections can create distinct user profiles.
+That limitation is why the Phase 1 relinking policy remains an explicit
+decision.
+
+Official reference checked 2026-07-29:
+
+- [Auth0 passwordless authentication](https://auth0.com/docs/authenticate/passwordless)
+
 ## AUTH-19 production email
 
-Result: **Not run — provider and price verification pending**
+Result: **Blocked — production sender and price not selected**
 
 The development tenant's Email passwordless connection warns that Auth0's
 built-in email provider is intended only for development/trial use. It uses
@@ -224,6 +269,18 @@ ADR-115's production-grade email requirement. The final Auth0 evaluation must
 identify and price the custom provider, verify sender-domain authentication,
 exercise delivery to US and Philippine test addresses, and document bounce,
 rate-limit, and operator-recovery behavior.
+
+Auth0's official guidance confirms that its built-in email provider is for
+testing only, is rate-limited, and is not designed for production reliability.
+Custom templates also require an external SMTP provider. Auth0 therefore has a
+valid integration path, but Auth0 alone does not determine the production email
+vendor or its price. This gate remains blocked rather than being inferred as a
+pass.
+
+Official references checked 2026-07-29:
+
+- [Auth0 built-in email provider limitations](https://support.auth0.com/center/s/article/Emails-to-Gmail-from-Auth0-never-arrive)
+- [Auth0 email templates and external SMTP requirement](https://auth0.com/docs/customize/email/email-templates)
 
 ## AUTH-20 cost and limits
 

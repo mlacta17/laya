@@ -169,6 +169,26 @@ against D1 membership on every protected request (AUTH-14), independent of the
 provider's sub-minute token window. Physical Expo behavior remains to be
 tested under the applicable client gates.
 
+## AUTH-13 and AUTH-14 application authorization
+
+Result: **Pass through provider-neutral Laya evidence**
+
+These gates do not depend on Clerk Organizations or a Clerk-specific membership
+feature. The [invitation and revocation contract](invitation-revocation.md)
+defines Clerk as the authenticator and Laya membership as the authorization
+boundary. The repository test
+`apps/api/test/auth-membership-boundary.test.ts` proves that:
+
+- a valid provider token without Laya membership receives HTTP 403;
+- identity mapping without active membership still receives HTTP 403;
+- active membership permits the same token; and
+- removing membership denies that still-valid token without revoking the Clerk
+  account or waiting for the token to expire.
+
+The model keys external identity by `(issuer, subject)`, not email or subject
+alone. This is Phase 0B boundary evidence, not a production invitation schema
+or route.
+
 ## AUTH-10 JWT verification
 
 Result: **Pass**
@@ -241,6 +261,73 @@ Official references checked on 2026-07-28:
 - [JWT templates](https://clerk.com/docs/guides/sessions/jwt-templates)
 - [Clerk manual verification and JWKS caching](https://clerk.com/docs/guides/sessions/verifying)
 - [Auth0 JWKS minimum-refresh guidance](https://support.auth0.com/center/s/article/jwks-endpoint-latency-and-timeout-impact)
+
+## AUTH-17 account recovery
+
+Result: **Pass for the tested browser methods, with operator escalation**
+
+The controlled passwordless tests exercised ordinary and failure recovery: a
+used code was rejected, a newly issued code then completed sign-in, and an
+expired verification directed the user to create a new one. Google sign-in
+also completed as an independent provider-owned authentication method.
+
+Laya does not reset provider credentials. A user who still controls an enabled
+method starts a new Clerk-owned sign-in transaction. Loss of the only identity,
+an unexpected account-linking state, or a requested identity relink escalates
+to the Laya operator. The operator may revoke/reissue an invitation or perform
+a future audited relink; Laya must never auto-link accounts by email.
+
+Official reference checked 2026-07-29:
+
+- [Clerk sign-up and sign-in options](https://clerk.com/docs/guides/configure/auth-strategies/sign-up-sign-in-options)
+
+## AUTH-18 operations and audit
+
+Result: **Pass with Hobby retention and provider-managed signing-key caveats**
+
+The operator located the disposable user, linked sign-in methods, active
+Windows/Chrome device, and the **Revoke device** action in the Clerk dashboard.
+After revocation, Application Logs showed the matching `session.revoked`
+event. The same action signed the browser out and caused the captured
+short-lived token to stop working within the measured bound documented in
+AUTH-09.
+
+Clerk documents dashboard user management, session revocation, and Application
+Logs. Hobby retains Application Logs for one day, so an application-owned Laya
+audit trail is still required for durable business and security events. Clerk
+manages the JWT signing keys exposed through its JWKS; Laya consumes those keys
+through bounded caching and refresh rather than operating the signing keys.
+Any future Clerk Backend API secret key can be rotated independently per
+environment. No backend secret was required or created for this spike.
+
+Official references checked 2026-07-29:
+
+- [Clerk user management](https://clerk.com/docs/guides/users/managing)
+- [Clerk session revocation](https://clerk.com/docs/reference/backend/sessions/revoke-session)
+- [Clerk Application Logs](https://clerk.com/docs/guides/dashboard/logs/application-logs)
+- [Clerk API-key rotation](https://clerk.com/docs/guides/secure/rotate-api-keys)
+
+## AUTH-19 production email
+
+Result: **Pass on the documented production path; live delivery remains a
+Phase 1 operational check**
+
+The development code arrived in approximately five seconds in the normal
+inbox, but development delivery is not treated as production evidence. Clerk
+documents that a production instance sends from the application's own domain,
+requires domain verification with SPF and DKIM during setup, and uses Clerk's
+production email infrastructure. Self-delivery through the `email.created`
+webhook is optional if Laya later needs its own provider.
+
+At Laya's expected 10 users and 100-user growth check, the required Clerk Hobby
+plan is USD 0/month and includes the production-instance path. No additional
+email vendor is required by the documented default path. Delivery to the US
+and Philippines must still be measured before launch; that is an operational
+readiness check, not an unpriced architecture dependency.
+
+Official reference checked 2026-07-29:
+
+- [Clerk email deliverability](https://clerk.com/docs/guides/development/troubleshooting/email-deliverability)
 
 ## AUTH-20 cost and limits
 
