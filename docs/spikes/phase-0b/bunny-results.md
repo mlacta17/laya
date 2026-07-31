@@ -204,5 +204,13 @@ record only neutral labels and measurements:
 | `movie-01` | 938,773,287 | 5,931.134 s | Source: 1920×808 HEVC, 10-bit 4:2:0; output: H.264 240p–720p | 7,671,300,092 total; 6,732,526,805 excluding original | 8.1716 total; 7.1716 excluding original | Unmeasured: provider timestamps conflict | None |
 | `episode-01` | | | | | | | |
 
+The measured `movie-01` multiplier is tracked as ARCHITECTURE.md §13.13:
+before Phase 1 Bunny integration, confirm from official documentation or Bunny
+support whether original retention and MP4-fallback generation are per-library
+settings, then re-baseline §11.2 from measurements. Offline downloads (FR-4)
+are expected to depend on the MP4 fallback path, while originals already live
+on the owner's drive (ADR-110) — so retention at Bunny duplicates a copy that
+already exists.
+
 Delete disposable media after the measurements and after any required cache
 observation window.

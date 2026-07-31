@@ -1,6 +1,6 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.3.7 D1 baseline · July 27, 2026*
+*Private streaming platform · v1.3.9 D1 baseline · July 30, 2026*
 *This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, progress keyed to a provider video asset, or browser subtitle extraction as already proven as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
 
 ---
@@ -624,6 +624,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 10. **Library model:** one shared library or separate friend/family libraries.
 11. **Profile model:** one profile per account or household profiles.
 12. ~~JWKS refresh cooldown~~ **Decided in ADR-138:** one forced refresh per provider URL per five minutes per Worker isolate; concurrent requests share the in-flight fetch.
+13. **Encoded-storage multiplier and retention levers:** the first Phase 0B measurement (`docs/spikes/phase-0b/bunny-results.md`, `movie-01`) stored 8.17× its source bytes — ≈4.7 GB per catalog hour against §11.2's 3.0 GB baseline — with the retained original (~12% of stored bytes) and MP4 fallback (~41%) as the dominant non-rendition components. Before Phase 1 Bunny integration: confirm from official documentation or support whether original retention and MP4-fallback generation are per-library settings; note that offline downloads (FR-4, Phase 5) are expected to depend on the MP4 fallback path while originals already live on the owner's drive (ADR-110); measure the representative episode; then re-baseline §11.2 from measurements rather than the estimate.
 
 ---
 
@@ -649,6 +650,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.3.6 | Jul 27, 2026 | Phase 0A passed deployed development and production acceptance. Its disposable ping route, contract, and table are removed through forward-only migration 0002 while test-only coverage preserves the reusable authenticated-D1 pattern. Phase 0A is archived and the bounded Phase 0B risk-spike brief is active. |
 | v1.3.7 | Jul 27, 2026 | Post-0A repository review applied: §4.0 records the expand/contract migration-ordering rule (CI migrates before deploying, so destructive migrations merge one step behind the code change — surfaced when migration 0002 briefly left the old dev Worker pointing at a dropped table). Repo hygiene alongside: `.gitattributes` pins LF so the Prettier gate passes identically on Windows and CI; the test D1 helper self-checks its migration list against `migrations/`; shared test-app wiring deduplicated. |
 | v1.3.8 | Jul 28, 2026 | Phase 0B real-provider verification closed the §13.12 JWKS abuse gate: ADR-138 limits forced unknown-`kid` refreshes to one per provider URL per five minutes per Worker isolate while preserving concurrent fetch sharing and bounded rotation recovery. |
+| v1.3.9 | Jul 30, 2026 | Post-0B-evidence review applied. Header version re-synced with this changelog (the v1.3.8 row landed without the title-line bump). §13.13 records the measured encoded-storage gate: `movie-01` stored 8.17× its source (≈4.7 GB per catalog hour versus §11.2's 3.0 GB baseline), so original-retention and MP4-fallback configurability need a documentation/support answer and §11.2 needs re-baselining from measurements before Phase 1 Bunny integration. |
 
 ---
 

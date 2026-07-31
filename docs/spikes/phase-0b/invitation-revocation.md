@@ -12,7 +12,6 @@ Authority:
 - `docs/ARCHITECTURE.md` §4.2, §8.1, ADR-125, ADR-127, and ADR-132
 - `docs/DESIGN.md` §4, §9, and §13
 - `docs/phases/active/PHASE-0B-BRIEF.md`
-- The architecture-alignment report in the Laya Research Paper file
 
 ## 1. Boundary in one sentence
 

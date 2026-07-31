@@ -105,7 +105,7 @@ worker measurements, not FFprobe timings.
 | `mkv-vobsub-01` | MediaInfo classified `S_VOBSUB` as image-based. EBML enumeration retained the track as unsupported and emitted no text cues. | Pass |
 | `invalid-parser-01` | The worker returned the controlled error `The EBML parser rejected this input.` No filename, path, or malformed output was returned. | Pass |
 | `mkv-streaming-49mb-01` | Disposable 48,760,475-byte synthetic stress fixture: 50,000 cues / 3,550,032 WebVTT bytes in 8,309 ms. Main-page reported heap rose 19,276 bytes. | Pass with memory-measurement limitation |
-| `mkv-large-01` | Streamed all 8,455,213,426 bytes in 17,792 ms and produced 9,000 cues / 577,817 WebVTT bytes. The single default English UTF-8 track was preserved, with zero Unicode replacement characters. Page-reported heap rose from 2,884,159 to 5,501,026 bytes (+2,616,867). A separate run cancelled promptly and returned the fresh-worker confirmation while the page remained responsive. | Pass |
+| `mkv-large-01` | Streamed all 8,455,213,426 bytes in 17,792 ms and produced 9,000 cues / 577,817 WebVTT bytes. The single default English UTF-8 track was preserved, with zero Unicode replacement characters. Page-reported heap rose from 2,884,159 to 5,501,026 bytes (+2,616,867). A separate run cancelled promptly and returned the fresh-worker confirmation while the page remained responsive. | Pass with memory-measurement limitation |
 | `tus-concurrent-01` | The 938,773,287-byte baseline uploaded to the disposable Bunny TUS endpoint in 28,077 ms at 33,435,431 bytes/second with zero retries. A second upload of the same bytes completed while `mkv-large-01` extraction streamed 8,455,213,426 bytes in 11,925 ms, produced 9,000 cues with zero Unicode replacements, and uploaded at 34,385,662 bytes/second in 27,301 ms with zero retries. The measured throughput change was +2.84%, which indicates normal run-to-run variation rather than degradation. | Pass |
 | `mkv-cancel-01` | Cancel terminated enumeration and extraction workers. A new ASS run then completed without refresh. | Pass |
 | `mkv-refresh-01` | Refresh during extraction returned the page to an idle state with no retained result and no enabled cancel action. | Pass |
@@ -132,6 +132,12 @@ the Laya workers separately, so their memory appears to be accounted under the
 tab process. This is a measured in-flight point, not a proven instantaneous
 peak.
 
+Cross-run extraction durations may be confounded by operating-system file
+caching and other run-to-run effects. Cache residency was not measured or
+controlled. The upload-throughput comparison is the controlled measurement in
+that row; the 11,925 ms concurrent and 17,792 ms solo extraction durations are
+not evidence of speedup or degradation on their own.
+
 ## Windows Edge results
 
 Environment: Edge 150.0.4078.105 on Windows. Durations below are browser worker
@@ -139,7 +145,7 @@ measurements.
 
 | Evidence label | Observation | Result |
 | --- | --- | --- |
-| `mkv-large-edge-01` | MediaInfo enumerated the single default English UTF-8 text track after reading 8,985,034 of 8,455,213,426 bytes in 103 ms. The EBML worker streamed all 8,455,213,426 bytes in 14,551 ms and produced 9,000 cues / 577,817 WebVTT bytes with zero invalid Unicode characters. The page-reported heap rose from 5,345,805 to 5,750,866 bytes (+405,061). | Pass |
+| `mkv-large-edge-01` | MediaInfo enumerated the single default English UTF-8 text track after reading 8,985,034 of 8,455,213,426 bytes in 103 ms. The EBML worker streamed all 8,455,213,426 bytes in 14,551 ms and produced 9,000 cues / 577,817 WebVTT bytes with zero invalid Unicode characters. The page-reported heap rose from 5,345,805 to 5,750,866 bytes (+405,061). | Pass with memory-measurement limitation |
 
 The Edge result matches the Chrome result for track classification, cue count,
 WebVTT byte count, and Unicode validity. This is evidence of deterministic
