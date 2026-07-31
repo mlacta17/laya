@@ -132,13 +132,11 @@ the Laya workers separately, so their memory appears to be accounted under the
 tab process. This is a measured in-flight point, not a proven instantaneous
 peak.
 
-Cross-run extraction durations carry a file-cache caveat: the concurrent
-`tus-concurrent-01` extraction re-read a fixture the operating system had
-already cached from the earlier solo `mkv-large-01` run, which is the likely
-reason it streamed faster (11,925 ms) than the first solo pass (17,792 ms).
-The upload-throughput comparison is the controlled measurement in that row;
-extraction-duration differences between runs are not evidence of speedup or
-degradation on their own.
+Cross-run extraction durations may be confounded by operating-system file
+caching and other run-to-run effects. Cache residency was not measured or
+controlled. The upload-throughput comparison is the controlled measurement in
+that row; the 11,925 ms concurrent and 17,792 ms solo extraction durations are
+not evidence of speedup or degradation on their own.
 
 ## Windows Edge results
 
