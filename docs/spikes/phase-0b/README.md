@@ -11,7 +11,7 @@ Authentication provider comparison: **in progress**.
 No provider has been selected. Auth0 and Clerk remain development-only
 candidates until every required test is recorded and ADR-127 is updated.
 
-Current external blocker (checked 2026-07-29): Apple Developer Program
+Current external blocker (checked 2026-07-30): Apple Developer Program
 enrollment is still pending activation. Physical iPhone development-build and
 native Apple sign-in checks remain explicitly blocked; browser, Worker,
 subtitle, and Bunny evidence can continue independently. The
@@ -51,22 +51,34 @@ provider or implement the Phase 1 domain model.
 
 ## Remaining authentication work
 
-The matrix is intentionally not complete. The next evidence runs are:
+The matrix is intentionally not complete. Browser Worker verification,
+expiry/refresh, revocation, JWKS behavior, operations inspection, and three
+consecutive US critical-flow runs are recorded for both providers. Remaining
+evidence is:
 
-1. Auth0 live Worker verification, expiry, JWKS, and operator revocation
-   (`AUTH-07`, `AUTH-09`, `AUTH-10`, and `AUTH-11`).
-2. Three consecutive US critical-flow runs for each provider (`AUTH-15`) and
-   Clerk's protected-request logout sub-result (`AUTH-08`).
-3. Auth0 operations/signing-key inspection (`AUTH-18`) and selection/pricing
-   of its required production email sender (`AUTH-19`).
-4. A trusted tester on a real Philippine connection (`AUTH-16`).
-5. After Apple activates the membership, physical iPhone Expo and Apple
+1. Auth0's required production email sender selection and verified price
+   (`AUTH-19`).
+2. A trusted tester on a real Philippine connection (`AUTH-16`).
+3. After Apple activates the membership, physical iPhone Expo and Apple
    sign-in runs (`AUTH-02` through the mobile portions of `AUTH-08`).
-6. Provider selection and ADR-127 only after every mandatory row has supported
+4. The remaining protected-request logout sub-results explicitly marked in the
+   provider matrix.
+5. Provider selection and ADR-127 only after every mandatory row has supported
    evidence.
 
 Until then, subtitle and Bunny spike work may proceed, but Phase 1 production
 authentication integration may not.
+
+## Prepared execution packets
+
+- [US and Philippines authentication reliability runbook](auth-reliability-runbook.md)
+- [Browser subtitle-extraction matrix](subtitle-results.md)
+- [Bunny Stream behavior and encoding-size matrix](bunny-results.md)
+
+These documents combine test contracts with recorded observations. Each file's
+own status is authoritative; incomplete rows remain open until the required
+physical connection, media/browser run, or disposable Bunny resource produces
+an observation.
 
 ## Result vocabulary
 
