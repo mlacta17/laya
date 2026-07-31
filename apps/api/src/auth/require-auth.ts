@@ -6,7 +6,7 @@ import { getAuthConfig } from "./config";
 import { JwksFetchError } from "./jwks";
 import { verifyAccessToken } from "./verify-token";
 
-// Route guard: verifies the bearer token and puts { subject } on
+// Route guard: verifies the bearer token and puts { issuer, subject } on
 // c.var.auth. Every rejection is the same generic 401 envelope — the real
 // reason goes to the structured log only, so responses never leak which
 // check failed (§8.1).

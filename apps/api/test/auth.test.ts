@@ -399,6 +399,7 @@ describe("JWKS fetch and cache (real-provider path)", () => {
       keySource: urlSource,
     });
 
+    expect(auth.issuer).toBe(MOCK_ISSUER);
     expect(auth.subject).toBe(TEST_SUBJECT);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

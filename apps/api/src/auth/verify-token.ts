@@ -4,6 +4,7 @@ import type { AuthConfig } from "./config";
 import { getSigningKeys } from "./jwks";
 
 export type AuthContext = {
+  issuer: string;
   subject: string;
 };
 
@@ -73,5 +74,5 @@ export async function verifyAccessToken(
     throw new JwtClaimMissing("token has no sub claim");
   }
 
-  return { subject: payload.sub };
+  return { issuer: config.issuer, subject: payload.sub };
 }

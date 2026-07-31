@@ -33,7 +33,7 @@ Spike code is disposable and must remain clearly separated from production code.
 
 - [ ] An Auth0-vs-Clerk matrix covers every auth criterion above with links, reproducible observations, costs as of the test date, and an explicit winner or no-go.
 - [ ] Browser and Expo flows are tested on real target devices; session restore, logout, revocation, and Worker verification results are recorded.
-- [ ] The invitation/revocation sequence identifies the enforcement boundary and failure behavior without prematurely fixing the domain schema.
+- [x] The invitation/revocation sequence identifies the enforcement boundary and failure behavior without prematurely fixing the domain schema. Evidence: `docs/spikes/phase-0b/invitation-revocation.md` and `apps/api/test/auth-membership-boundary.test.ts`.
 - [ ] The complete subtitle matrix records browser, file/track type, result, duration, peak memory, cancellation/recovery behavior, and upload impact.
 - [ ] The written subtitle conclusion selects embedded extraction for MVP or falls back to sidecar-only, with failures and limitations preserved.
 - [ ] Bunny duplicate-caption, caption-mutation, region, and encoding-size questions have measured or provider-confirmed answers.

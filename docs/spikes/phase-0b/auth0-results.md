@@ -68,8 +68,9 @@ authentication suite passes 24 tests.
 Limitations:
 
 - This result proves initial React sign-in and token acquisition only. It does
-  not yet prove refresh, reopen, logout, revocation, invitation enforcement, or
-  Worker verification against Auth0's live JWKS.
+  not by itself prove refresh, reopen, logout, revocation, or invitation
+  enforcement. Worker verification and JWKS behavior are recorded separately
+  under AUTH-10 and AUTH-11.
 
 ## AUTH-04 Google sign-in
 
@@ -186,6 +187,56 @@ The final provider decision must compare this exposure with alternative Auth0
 session designs, Clerk's behavior, access-token lifetime, Content Security
 Policy, and the cost/availability of a same-site custom authentication domain.
 
+## AUTH-07 refresh and expiry
+
+Result: **Pass**
+
+On 2026-07-29, the disposable custom API's access-token lifetimes were
+temporarily reduced from 86,400 seconds (maximum) and 7,200 seconds
+(implicit/hybrid) to 300 seconds. The operator signed out and completed a fresh
+Google sign-in so the harness received a newly issued five-minute token.
+
+The harness:
+
+1. captured the current token only in transient browser memory;
+2. confirmed its safe metadata contained the expected `RS256`, issuer,
+   audience, and five-minute expiration;
+3. held that exact token until five seconds after `exp`; and
+4. sent it to the isolated Laya Worker.
+
+The Worker rejected the expired captured token with **HTTP 401**, so expiry
+enforcement passes.
+
+The first SDK replacement-token attempt returned a sanitized **Missing Refresh
+Token** error. The application already allowed the `refresh_token` grant, but
+the custom API had not enabled **Allow Offline Access**. After enabling that API
+setting, the disposable harness made `offline_access` explicit in its
+authorization scope. A complete logout and new Google authorization then
+displayed Auth0's consent screen and issued the required rotating refresh
+token.
+
+The forced-refresh retest:
+
+1. bypassed the access-token cache to obtain a first token;
+2. waited two seconds and bypassed the cache again;
+3. observed that the second token's safe `exp` value was later than the first;
+   and
+4. received **HTTP 200** when the isolated Laya Worker verified the second
+   token.
+
+No complete access token, refresh token, authorization code, cookie, subject,
+or account identifier was displayed, logged, or retained as evidence.
+
+After the bounded AUTH-09 revocation measurement, the operator restored the API
+token-lifetime fields to their recorded 86,400- and 7,200-second values.
+
+Official references checked 2026-07-29:
+
+- [Auth0 API settings](https://auth0.com/docs/get-started/apis/api-settings)
+- [Auth0 access-token lifetime](https://auth0.com/docs/secure/tokens/access-tokens/update-access-token-lifetime)
+- [Auth0 get refresh tokens](https://auth0.com/docs/secure/tokens/refresh-tokens/get-refresh-tokens)
+- [Auth0 refresh-token use](https://auth0.com/docs/secure/tokens/refresh-tokens/use-refresh-tokens)
+
 ## AUTH-08 browser logout
 
 Browser sub-result: **Pass**
@@ -206,9 +257,193 @@ Procedure and observations:
 The old access token's Worker behavior and server-side session revocation are
 separate tests.
 
+## AUTH-09 server revocation
+
+Result: **Pass with access-token-lifetime caveat**
+
+On 2026-07-29, the isolated harness captured a five-minute Auth0 access token
+and confirmed that the Laya Worker initially accepted it with **HTTP 200**. The
+operator then opened the active Google-connected disposable user in Auth0 and
+revoked **Laya Web Auth Spike** under **Authorized Applications**.
+
+The already-issued access token remained valid until its normal expiry, as
+Auth0 documents. The polling harness observed the Worker reject that same token
+with **HTTP 401** 243 seconds after capture. The page could still display its
+locally cached user name; that presentation state was not treated as proof of
+API authorization.
+
+After revocation, a forced SDK refresh failed with the sanitized provider error
+**Unknown or invalid refresh token**. This proves that the revoked application
+grant could not mint a replacement access token after the captured token
+expired.
+
+Operational consequence: Laya's maximum provider-revocation delay is bounded by
+the access-token lifetime. Independent Laya membership revocation remains the
+immediate application-level control described by AUTH-14.
+
+If Auth0 is selected, the production client must treat this refresh failure as
+an authentication boundary: clear its cached presentation state and return to
+sign-in. A stale user name is not API access, but leaving it visible would be
+confusing and should not be copied from the disposable harness.
+
+No complete access token, refresh token, cookie, provider user identifier, or
+account identifier was displayed, logged, or retained as evidence.
+
+Official reference checked 2026-07-29:
+
+- [Revoke Auth0 refresh tokens](https://auth0.com/docs/secure/tokens/refresh-tokens/revoke-refresh-tokens)
+
+## AUTH-10 JWT verification
+
+Result: **Pass**
+
+On 2026-07-29, the disposable browser harness obtained a fresh Auth0 access
+token and sent it directly to an isolated local Wrangler Worker. The Worker
+reused Laya's production-path `requireAuth` and `verifyAccessToken`
+implementation with the exact development issuer, Laya development API
+audience, and Auth0 public JWKS URL. The token received **HTTP 200**.
+
+Only safe metadata was displayed:
+
+- signing algorithm `RS256`;
+- the expected Auth0 issuer form;
+- an audience array containing the Laya development API identifier and Auth0
+  `/userinfo`;
+- an expiration timestamp; and
+- a shortened signing-key identifier.
+
+The complete token was held only in browser memory for the request. It was not
+displayed, copied, logged, or persisted as evidence. Neither deployed Laya
+environment was changed.
+
+The repository's provider-neutral rejection suite covers invalid signature,
+unknown key ID, expiry, issuer, audience, missing claims, future `nbf`,
+malformed JWTs, JWKS failures, cache behavior, and bounded unknown-key refresh.
+The full API suite passed 78/78 tests after the invitation/membership boundary
+tests were added.
+
+## AUTH-11 JWKS rotation safety
+
+Result: **Pass**
+
+The isolated Worker successfully fetched Auth0's real public JWKS and verified
+the live token. ADR-138's provider-neutral hardening then supplies the rotation
+and abuse guarantees: one forced refresh for a legitimate unknown key, shared
+work for concurrent misses, and a five-minute forced-refresh cooldown per JWKS
+URL for sequential garbage key IDs.
+
+Automated tests prove successful verification after a simulated rotation,
+concurrent fetch sharing, cooldown enforcement/resumption, and cooldown
+activation even after a failed forced fetch. Actual tenant signing-key rotation
+was not performed because AUTH-18 requires inspection—not an unnecessary
+destructive rotation. Auth0 officially exposes current and next keys in JWKS,
+which is the shape exercised by the automated rotation test.
+
+Official reference checked 2026-07-29:
+
+- [Auth0 signing-key rotation](https://auth0.com/docs/get-started/tenant-settings/signing-keys/rotate-signing-keys)
+
+## AUTH-13 and AUTH-14 application authorization
+
+Result: **Pass through provider-neutral Laya evidence**
+
+These gates do not depend on an Auth0-specific membership feature. The
+[invitation and revocation contract](invitation-revocation.md) defines Auth0 as
+the authenticator and Laya membership as the authorization boundary. The
+repository test `apps/api/test/auth-membership-boundary.test.ts` proves that:
+
+- a valid provider token without Laya membership receives HTTP 403;
+- identity mapping without active membership still receives HTTP 403;
+- active membership permits the same token; and
+- removing membership denies that still-valid token without changing the
+  provider account.
+
+The model keys external identity by `(issuer, subject)`, not email or subject
+alone. This is Phase 0B boundary evidence, not a production invitation schema
+or route.
+
+## AUTH-17 account recovery
+
+Result: **Pass for the tested browser methods, with operator escalation**
+
+The controlled passwordless tests exercised both ordinary and failure recovery:
+a consumed code was rejected, a newly issued code then completed sign-in, and
+an expired code was rejected without damaging the account. Google sign-in also
+provides a separate provider-owned authentication method for an identity that
+has that connection.
+
+Laya does not reset provider credentials. A user who still controls an enabled
+provider method starts a new provider-owned sign-in transaction. Loss of the
+only provider identity, conflicting same-email Auth0 profiles, or identity
+relinking escalates to the Laya operator. The operator may revoke/reissue an
+invitation or perform a future audited relink; Laya must never auto-link by
+email.
+
+Auth0 documents passwordless as a separate connection and warns that the same
+email used through different connections can create distinct user profiles.
+That limitation is why the Phase 1 relinking policy remains an explicit
+decision.
+
+Official reference checked 2026-07-29:
+
+- [Auth0 passwordless authentication](https://auth0.com/docs/authenticate/passwordless)
+
+## AUTH-18 operations and audit
+
+Result: **Pass**
+
+The supported Essentials-level path must not assume Auth0's Enterprise-only
+session-management endpoints. Current official documentation distinguishes:
+
+- dashboard revocation under **User Management > Users > Authorized
+  Applications**, which invalidates the user's refresh-token grant for the
+  application;
+- Enterprise-only Management API endpoints for enumerating and deleting user
+  sessions or bulk-managing refresh tokens;
+- tenant logs under **Monitoring > Logs**; and
+- signing-key inspection/rotation under **Settings > Signing Keys**.
+
+Auth0 also documents that an already-issued access token cannot be revoked.
+The live test must therefore measure two independent observations:
+
+1. the captured access token remains usable only until its deliberately short
+   expiry; and
+2. after the operator revokes the authorized application, the SPA cannot use
+   its refresh-token grant to obtain another access token.
+
+The operator located the active Google-connected disposable user and the
+authorized Laya application, revoked its grant, and inspected the sanitized
+tenant audit timeline. The relevant observations were:
+
+- an **API Operation — Delete a grant by id** event at
+  `2026-07-30T01:34:37.165Z`, matching the dashboard revocation;
+- a group of **Failed Exchange — Token could not be decoded or is missing in
+  DB** events between `2026-07-30T01:39:53.013Z` and
+  `2026-07-30T01:42:53.196Z`, matching the bounded window in which the
+  disposable SPA attempted to exchange the revoked refresh token; and
+- an **API Operation — Update a resource server** event at
+  `2026-07-30T01:45:18.293Z`, matching the later restoration of the custom
+  API's token-lifetime settings rather than the revocation itself.
+
+The failed exchanges used the expected disposable application label and
+occurred during the controlled test window. Their repetition is preserved as
+an observation, but the spike did not capture request-correlation data and
+therefore does not assign an unsupported cause to every duplicate event.
+
+The operator also confirmed that the development dashboard exposes one signing
+key as **currently used** and another as **next in queue**. No key was rotated,
+revoked, downloaded, copied, or revealed.
+
+Official references checked 2026-07-29:
+
+- [Revoke refresh tokens](https://auth0.com/docs/secure/tokens/refresh-tokens/revoke-refresh-tokens)
+- [Manage user sessions](https://auth0.com/docs/manage-users/sessions/manage-user-sessions-with-auth0-management-api)
+- [Incident response using logs](https://auth0.com/docs/secure/security-guidance/incident-response-using-logs)
+- [Rotate signing keys](https://auth0.com/docs/get-started/tenant-settings/signing-keys/rotate-signing-keys)
+
 ## AUTH-19 production email
 
-Result: **Not run — provider and price verification pending**
+Result: **Blocked — production sender and price not selected**
 
 The development tenant's Email passwordless connection warns that Auth0's
 built-in email provider is intended only for development/trial use. It uses
@@ -224,6 +459,18 @@ ADR-115's production-grade email requirement. The final Auth0 evaluation must
 identify and price the custom provider, verify sender-domain authentication,
 exercise delivery to US and Philippine test addresses, and document bounce,
 rate-limit, and operator-recovery behavior.
+
+Auth0's official guidance confirms that its built-in email provider is for
+testing only, is rate-limited, and is not designed for production reliability.
+Custom templates also require an external SMTP provider. Auth0 therefore has a
+valid integration path, but Auth0 alone does not determine the production email
+vendor or its price. This gate remains blocked rather than being inferred as a
+pass.
+
+Official references checked 2026-07-29:
+
+- [Auth0 built-in email provider limitations](https://support.auth0.com/center/s/article/Emails-to-Gmail-from-Auth0-never-arrive)
+- [Auth0 email templates and external SMTP requirement](https://auth0.com/docs/customize/email/email-templates)
 
 ## AUTH-20 cost and limits
 
