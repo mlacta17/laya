@@ -1,8 +1,8 @@
 # Bunny Stream behavior spike
 
 Status: **In progress — single-region library, secure TUS, representative movie,
-caption mutation, and refresh-recovery evidence recorded; episode measurement
-and Bunny support answers remain**
+caption mutation, refresh recovery, and Bunny support evidence recorded;
+episode measurement and storage-setting answers remain**
 
 Decision authority: ARCHITECTURE.md §6.1–§6.2, §13.2–§13.4, and ADR-122.
 
@@ -88,16 +88,20 @@ source duration as 5,931 seconds with no transcoding messages. Its first status
 read showed encoding at 15%; the final encoded storage evidence is recorded
 below.
 
-A later list response and dedicated video response both returned status `3`,
-which Bunny's webhook documentation labels `Finished`, while simultaneously
-returning `encodeProgress: 15`, no available resolutions, and zero encoded
-storage bytes. The dedicated storage endpoint likewise reported zero encoded
-bytes while correctly reporting the 938,773,287-byte original. At the same
-time, the Bunny dashboard visibly showed `Transcoding` with no playable
-preview. Treating status `3` alone as encoding completion is therefore rejected
-for the observed TUS workflow. Completion evidence requires consistent
-resolutions/storage plus playable output (or a provider-confirmed alternative);
-the discrepancy remains a support question.
+A later list response and dedicated video response both returned API status
+`3` while simultaneously returning `encodeProgress: 15`, no available
+resolutions, and zero encoded storage bytes. The dedicated storage endpoint
+likewise reported zero encoded bytes while correctly reporting the
+938,773,287-byte original. At the same time, the Bunny dashboard visibly showed
+`Transcoding` with no playable preview.
+
+Bunny support clarified on 2026-07-31 that a TUS-uploaded video is fully
+playable at **API status `4`**, while **webhook status `3`** represents the
+corresponding completion event. The earlier interpretation had incorrectly
+compared the API value with the webhook enum. Production polling must use the
+API contract and require status `4`; webhook handling must use the separate
+webhook contract and status `3`. Encoding progress and playable output remain
+useful diagnostics, but they do not replace those endpoint-specific states.
 
 After the dashboard visibly completed transcoding, the dedicated response
 reported 100% and four H.264 renditions (`240p`, `360p`, `480p`, and `720p`)
@@ -144,6 +148,49 @@ media.
 | Delete SDH (`sdh`) | HTTP 200 | API immediately removes only SDH | Player removes SDH after normal refresh | Not separately sampled | Standard remains unaffected |
 | Delete `en` | HTTP 200 | API immediately reaches zero captions | Player exposes no caption choices after normal refresh | Old direct URL still returns payload A on the delayed recheck | The old direct caption URL remains an HTTP 200 cache hit after deletion, including with unique queries |
 
+### Support-directed Edge Rule retest — passed 2026-07-31
+
+On 2026-07-31, Bunny support suggested that an Edge Rule bypassing cache for
+caption files **might** address the stale replacement/deletion behavior. The
+supplied example used both of these actions with a value of zero seconds:
+
+1. `Override Browser Cache Time`
+2. `Override Cache Time`
+
+The condition was limited to caption request URLs matching
+`*/captions/*`. The account-specific CDN hostname is intentionally omitted from
+git.
+
+The rule was enabled only on the disposable library's pull zone. Its exact URL
+condition excludes playlists, video segments, thumbnails, and preview paths;
+the pre-existing `.m3u8` cache rule remained unchanged. Unsigned spot requests
+to the playlist and thumbnail returned HTTP 403, so they provide no additional
+cache-header evidence beyond the rule's structural path isolation.
+
+The retest produced:
+
+| Step | API state | Direct CDN | Player |
+| --- | --- | --- | --- |
+| Add payload A | `English Edge A`, version 1 | HTTP 200, marker A, `CDN-Cache: BYPASS`, `Cache-Control: public, max-age=0` | Current 45-second payload A rendered |
+| Replace with payload B | `English Edge B`, version 2 | HTTP 200 and marker B immediately with the same bypass/zero-cache headers | A fresh browser session rendered the 45-second payload B |
+| Replace B with C | `English Edge C`, version 3 | HTTP 200 and marker C immediately with the same bypass/zero-cache headers | The same fresh session rendered C after an ordinary refresh |
+| Delete `en` | zero captions | HTTP 404 immediately and on the delayed recheck; no old marker; `CDN-Cache: BYPASS` | The same fresh session exposed no caption choices after an ordinary refresh |
+
+One deliberate stale-client check preserved a browser profile that had loaded a
+two-second payload before the Edge Rule existed. Even after a hard page refresh,
+that profile continued rendering its old response while showing the current
+`English Edge B` label. A clean browser session fetched B correctly. This shows
+that the rule controls new responses but cannot retroactively evict a response
+already stored in a user's browser cache.
+
+**Conclusion:** accept the caption-scoped zero-cache rule under ADR-140 and
+provision it before the first production caption is published. With the rule
+already active, replacement and deletion passed in both direct CDN and player
+tests. Do not use a pull-zone-wide purge for normal caption mutations. If a
+future deployment introduces or repairs the rule after clients have cached
+captions, treat those pre-rule clients as a separate migration problem rather
+than claiming the rule invalidates their local cache.
+
 ## Region evidence
 
 Record the disposable Stream library's selectable primary region and available
@@ -157,6 +204,17 @@ replication locations. Ask Bunny support:
 
 Preserve the dated support answer. Do not infer Stream behavior solely from the
 general Storage product.
+
+### Bunny support answer — 2026-07-31
+
+Bunny support confirmed that Stream encoders are located in Frankfurt, so
+Frankfurt is the default main storage point and cannot be changed to a U.S.
+primary. Support also confirmed that removing replication regions requires
+creating another library and re-uploading its videos.
+
+This closes the provider-behavior question. ADR-139 selects one Frankfurt copy
+for launch and defers every replica until measurements justify its irreversible
+addition. Canonical originals remain on the owner's drive under ADR-110.
 
 ### Dashboard observation — 2026-07-30
 
@@ -174,10 +232,9 @@ showed:
 - the explicit warning that replication regions cannot be removed after the
   storage zone is created.
 
-The screen does not by itself prove whether a non-Frankfurt Stream primary can
-be selected. The apparent default replication selections must be removed
-before creating this disposable single-region library, and the production
-primary-region question still requires a Stream-specific support answer.
+The screen alone did not prove whether a non-Frankfurt Stream primary could be
+selected. The 2026-07-31 Stream-specific support answer above resolves that
+question: Frankfurt is the required main storage point.
 
 After deselecting Singapore, Los Angeles, and New York, every non-primary
 location showed a `+` icon, Frankfurt remained `Main`, and the page warned that
