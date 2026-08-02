@@ -1,6 +1,6 @@
 # Project Laya — Design Program
 
-*Private streaming platform · Design plan v0.3 · July 2026 · Project Laya · Authority: ARCHITECTURE.md v1.3*
+*Private streaming platform · Design plan v0.3.1 · August 2026 · Project Laya · Authority: ARCHITECTURE.md v1.3.11*
 
 ---
 
@@ -8,7 +8,7 @@
 
 This document answers one question: **what do I design, in what order, and how do I know when a phase is done?** It is the design counterpart to the architecture document and shares its sequencing, because design that runs on a different rhythm from engineering produces beautiful screens nobody can build and built screens nobody designed.
 
-**Verification status.** The technical constraints below are grounded in the verified decisions of ARCHITECTURE.md v1.3 — see its ADR register, especially ADR-121 (stable playables), ADR-122 (subtitle extraction provisional), ADR-126/127 (D1; managed auth pending Phase 0B), and ADR-133 (lean catalog surface). Two of them shape design scope materially:
+**Verification status.** The technical constraints below are grounded in the verified decisions of ARCHITECTURE.md v1.3.11 — see its ADR register, especially ADR-121 (stable playables), ADR-122 (subtitle extraction provisional), ADR-126/127 (D1; Clerk authentication selected), and ADR-133 (lean catalog surface). Two of them shape design scope materially:
 
 1. **Quality is sometimes a visible user choice** (per ADR-104). The platform (Bunny Stream) provides silent adaptive HLS, but constrained connections — the Philippines case — still warrant explicit control: a "Data saver / quality" preference (Design Phase 2) and a quality control in the player (Design Phase 1), plus a per-download quality choice on mobile.
 
@@ -136,11 +136,11 @@ Estimates assume design only — not build. They are deliberately generous on D1
 
 **Goal:** people get in, and the product remembers them.
 
-The reframe that saves a week of work: **there is no sign-up.** There is invite redemption, designed provider-neutral until Phase 0B selects the auth provider (ADR-127): open invitation → authenticate with an allowed method (passwordless email or Google/Apple — whatever the selected provider offers) → Laya validates the invitation → choose display name and avatar → enter the library. Two to three screens, no passwords unless the final provider decision explicitly requires them, no marketing consent, no plan selection. Design the *invite* as an artifact too: what does the message a friend receives look like, and does it explain what this thing is?
+The reframe that saves a week of work: **there is no sign-up.** There is invite redemption through Clerk (ADR-127), while Laya keeps the product flow provider-boundary-neutral: open invitation → authenticate with passwordless email, Google or Apple → Laya validates the invitation → choose display name and avatar → enter the library. Two to three screens, no passwords, no marketing consent, no plan selection. Clerk authentication alone never grants membership. Design the *invite* as an artifact too: what does the message a friend receives look like, and does it explain what this thing is?
 
 **Preferences worth having** (and no more): preferred subtitle language and default-on/off, autoplay next episode, a **data-saver / quality preference** — which is now a real feature rather than a nicety, per §1, and the primary accommodation for family in the Philippines — and optional taste seeding at first run ("pick 5 things you like") that gives the recommendation engine something to work with on day one. Keep taste seeding skippable; forcing it before first playback is a conversion killer even among friends.
 
-**Also design here:** the account-recovery path — primary recovery goes through the selected provider's own mechanism (passwordless re-authentication, social re-login); "message the operator" remains the stated escalation path in the UI, not the primary architecture.
+**Also design here:** the account-recovery path — primary recovery goes through Clerk's own mechanism (passwordless re-authentication or social re-login); "message the operator" remains the stated escalation path in the UI, not the primary architecture.
 
 ---
 

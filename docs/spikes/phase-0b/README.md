@@ -6,15 +6,20 @@ personal messages, and media files stay outside the repository.
 
 ## Current status
 
-Authentication provider comparison: **in progress**.
+Authentication provider comparison: **complete — Clerk selected**.
 
-No provider has been selected. Auth0 and Clerk remain development-only
-candidates until every required test is recorded and ADR-127 is updated.
+ADR-127 selects Clerk for Phase 1 production integration. Auth0 remains a
+technically viable but rejected spike candidate. No provider SDK, production
+tenant credential, token, or disposable harness enters the production
+codebase during Phase 0B.
 
-Current external blocker (checked 2026-07-30): Apple Developer Program
-enrollment is still pending activation. Physical iPhone development-build and
-native Apple sign-in checks remain explicitly blocked; browser, Worker,
-subtitle, and Bunny evidence can continue independently. The
+The Apple Developer Program enrollment is active. Clerk's physical iPhone
+development-build matrix, including native Apple sign-in, is complete. Auth0's
+equivalent physical-iPhone Google, passwordless email, Apple, reopen, refresh,
+logout, Worker-verification, and revocation flows are also recorded. Provider
+selection is complete; production launch remains blocked on the explicitly
+carried AUTH-12 production-instance isolation test and AUTH-16 trusted
+real-Philippines run. The
 [provider-neutral invitation/revocation contract](invitation-revocation.md)
 and its API-boundary tests are complete Phase 0B evidence; production
 invitation routes and schema remain intentionally deferred. A blocked device
@@ -51,23 +56,18 @@ provider or implement the Phase 1 domain model.
 
 ## Remaining authentication work
 
-The matrix is intentionally not complete. Browser Worker verification,
-expiry/refresh, revocation, JWKS behavior, operations inspection, and three
-consecutive US critical-flow runs are recorded for both providers. Remaining
-evidence is:
+The candidate comparison is complete. Auth0's unresolved external production
+email provider is preserved as a rejection factor rather than work required for
+the selected provider. Two Clerk production gates remain:
 
-1. Auth0's required production email sender selection and verified price
-   (`AUTH-19`).
-2. A trusted tester on a real Philippine connection (`AUTH-16`).
-3. After Apple activates the membership, physical iPhone Expo and Apple
-   sign-in runs (`AUTH-02` through the mobile portions of `AUTH-08`).
-4. The remaining protected-request logout sub-results explicitly marked in the
-   provider matrix.
-5. Provider selection and ADR-127 only after every mandatory row has supported
-   evidence.
+1. Create the separate production instance in Phase 1 and prove that
+   development tokens fail against production before protected production
+   routes are enabled (`AUTH-12`).
+2. Run the reliability packet through a trusted tester on a real Philippine
+   connection before launch (`AUTH-16`).
 
-Until then, subtitle and Bunny spike work may proceed, but Phase 1 production
-authentication integration may not.
+Phase 0B may now finish its subtitle and Bunny conclusions. Production Clerk
+integration remains Phase 1 scope.
 
 ## Prepared execution packets
 
