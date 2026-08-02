@@ -1,6 +1,6 @@
 # Phase 0B Brief — Risk spikes
 
-*Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.9 and DESIGN.md v0.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
+*Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.11 and DESIGN.md v0.3.1. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
 ---
 
@@ -31,8 +31,8 @@ Spike code is disposable and must remain clearly separated from production code.
 
 ## Required evidence and acceptance checks
 
-- [ ] An Auth0-vs-Clerk matrix covers every auth criterion above with links, reproducible observations, costs as of the test date, and an explicit winner or no-go.
-- [ ] Browser and Expo flows are tested on real target devices; session restore, logout, revocation, and Worker verification results are recorded.
+- [x] An Auth0-vs-Clerk matrix covers every auth criterion above with links, reproducible observations, costs as of the test date, and an explicit winner or no-go. Clerk selected August 2, 2026; shared AUTH-12/AUTH-16 blockers remain explicit production gates.
+- [x] Browser and Expo flows are tested on real target devices; session restore, logout, revocation, and Worker verification results are recorded.
 - [x] The invitation/revocation sequence identifies the enforcement boundary and failure behavior without prematurely fixing the domain schema. Evidence: `docs/spikes/phase-0b/invitation-revocation.md` and `apps/api/test/auth-membership-boundary.test.ts`.
 - [ ] The complete subtitle matrix records browser, file/track type, result, duration, peak memory, cancellation/recovery behavior, and upload impact.
 - [ ] The written subtitle conclusion selects embedded extraction for MVP or falls back to sidecar-only, with failures and limitations preserved.
