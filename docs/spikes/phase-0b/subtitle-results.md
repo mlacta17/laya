@@ -1,8 +1,9 @@
 # Browser subtitle-extraction spike
 
 Status: **Browser spike in progress — Windows Chrome and Edge large-file
-extraction plus concurrent TUS upload and refresh recovery pass; Firefox and
-macOS browser runs remain**
+extraction plus concurrent TUS upload and refresh recovery pass; macOS Safari,
+Chrome, and Firefox synthetic-fixture extraction plus parser-failure recovery
+pass; remaining cross-browser and macOS large-file/recovery runs remain**
 
 Decision authority: ARCHITECTURE.md §6.2, §13.5, and ADR-122.
 
@@ -156,6 +157,87 @@ In a separate large-file recovery attempt, the operator clicked **Cancel**
 approximately two seconds after starting. The controller returned `Cancelled.
 Fresh workers will be created for the next run.` and remained responsive.
 
+## macOS Safari results
+
+Environment: Safari 26.5 (build 21624.2.5.11.4) on macOS 26.5.1 (build
+25F80). Durations below are browser worker measurements. The fixture bytes,
+track metadata and aggregate output measurements are sanitized harness output;
+no filename, local path or subtitle cue text was retained.
+
+| Evidence label | Observation | Result |
+| --- | --- | --- |
+| `mac-safari-multi-01` | MediaInfo read all 11,665 bytes in 59 ms and enumerated four text tracks: default English UTF-8, intentionally mis-tagged French ASS, language-absent hearing-impaired UTF-8 and forced English UTF-8. EBML extraction read all bytes in 19 ms and produced the expected per-track split of 3/3/2/2 cues: 10 cues / 742 WebVTT bytes total with zero Unicode replacement characters. | Pass |
+| `mac-safari-ass-01` | MediaInfo read all 10,670 bytes in 51 ms and found one default Filipino ASS track. EBML extraction read all bytes in 8 ms and produced 3 cues / 220 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mac-safari-mp4-01` | MediaInfo read all 12,362 bytes in 49 ms and found one default Filipino `tx3g` timed-text track. MP4Box read all bytes in 6 ms and produced 3 non-empty cues / 222 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mac-safari-vobsub-01` | MediaInfo read all 32,768 bytes in 53 ms and classified the default French `S_VOBSUB` track as image-based. EBML enumeration read all bytes in 7 ms, retained the track as unsupported and emitted zero cues / zero WebVTT bytes. | Pass |
+| `mac-safari-invalid-01` | The worker returned the controlled error `The EBML parser rejected this input.` The sanitized result contained no filename, path or malformed output. | Pass |
+| `mac-safari-parser-recovery-01` | Immediately after the controlled parser failure, a fresh-worker run of the valid ASS fixture completed without a page reload. MediaInfo read all bytes in 46 ms; EBML extraction read all bytes in 11 ms and reproduced 3 cues / 220 WebVTT bytes with zero Unicode replacement characters. | Pass |
+
+Safari exposed no `performance.memory` values to the harness, so baseline,
+peak and increase were all unavailable rather than measured as zero. These
+small-fixture results therefore prove deterministic extraction, metadata
+preservation, unsupported-image handling and parser-failure recovery in Safari;
+they do not close the macOS large-file memory, cancellation, refresh or
+concurrent-upload gates.
+
+## macOS Chrome results
+
+Environment: Google Chrome 150.0.7871.187 (build 7871.187) on macOS 26.5.1
+(build 25F80). Durations below are browser worker measurements. The fixture
+bytes, track metadata and aggregate output measurements are sanitized harness
+output; no filename, local path or subtitle cue text was retained.
+
+| Evidence label | Observation | Result |
+| --- | --- | --- |
+| `mac-chrome-multi-01` | MediaInfo read all 11,665 bytes in 41 ms and enumerated four text tracks: default English UTF-8, intentionally mis-tagged French ASS, language-absent hearing-impaired UTF-8 and forced English UTF-8. EBML extraction read all bytes in 6 ms and produced the expected per-track split of 3/3/2/2 cues: 10 cues / 742 WebVTT bytes total with zero Unicode replacement characters. | Pass |
+| `mac-chrome-ass-01` | MediaInfo read all 10,670 bytes in 36 ms and found one default Filipino ASS track. EBML extraction read all bytes in 5 ms and produced 3 cues / 220 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mac-chrome-mp4-01` | MediaInfo read all 12,362 bytes in 39 ms and found one default Filipino `tx3g` timed-text track. MP4Box read all bytes in 5 ms and produced 3 non-empty cues / 222 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mac-chrome-vobsub-01` | MediaInfo read all 32,768 bytes in 43 ms and classified the default French `S_VOBSUB` track as image-based. EBML enumeration read all bytes in 2 ms, retained the track as unsupported and emitted zero cues / zero WebVTT bytes. | Pass |
+| `mac-chrome-invalid-01` | The worker returned the controlled error `The EBML parser rejected this input.` The sanitized result contained no filename, path or malformed output. | Pass |
+| `mac-chrome-parser-recovery-01` | Immediately after the controlled parser failure, a fresh-worker run of the valid ASS fixture completed without a page reload. MediaInfo read all bytes in 46 ms; EBML extraction read all bytes in 7 ms and reproduced 3 cues / 220 WebVTT bytes with zero Unicode replacement characters. | Pass |
+
+For the six rows above, Chrome's page-level `performance.memory` snapshot
+reported baseline equal to peak: respectively 4,093,072; 4,106,412; 4,111,927;
+4,075,401; 4,087,892; and 4,099,308 bytes. A zero sampled increase on these
+operations, which completed in milliseconds, is not evidence that the worker
+allocated no memory and does not measure total renderer/worker process memory.
+The macOS large-file memory, cancellation, refresh and concurrent-upload gates
+remain open.
+
+## macOS Firefox results
+
+Environment: Firefox 153.0.1 (build 15326.7.27) on macOS 26.5.1 (build 25F80).
+Durations below are browser worker measurements. The fixture bytes, track
+metadata and aggregate output measurements are sanitized harness output; no
+filename, local path or subtitle cue text was retained.
+
+| Evidence label | Observation | Result |
+| --- | --- | --- |
+| `mac-firefox-multi-01` | MediaInfo read all 11,665 bytes in 49 ms and enumerated four text tracks: default English UTF-8, intentionally mis-tagged French ASS, language-absent hearing-impaired UTF-8 and forced English UTF-8. EBML extraction read all bytes in 12 ms and produced the expected per-track split of 3/3/2/2 cues: 10 cues / 742 WebVTT bytes total with zero Unicode replacement characters. | Pass |
+| `mac-firefox-ass-01` | MediaInfo read all 10,670 bytes in 43 ms and found one default Filipino ASS track. EBML extraction read all bytes in 6 ms and produced 3 cues / 220 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mac-firefox-mp4-01` | MediaInfo read all 12,362 bytes in 45 ms and found one default Filipino `tx3g` timed-text track. MP4Box read all bytes in 5 ms and produced 3 non-empty cues / 222 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mac-firefox-vobsub-01` | MediaInfo read all 32,768 bytes in 46 ms and classified the default French `S_VOBSUB` track as image-based. EBML enumeration read all bytes in 6 ms, retained the track as unsupported and emitted zero cues / zero WebVTT bytes. | Pass |
+| `mac-firefox-invalid-01` | The worker returned the controlled error `The EBML parser rejected this input.` The sanitized result contained no filename, path or malformed output. | Pass |
+| `mac-firefox-parser-recovery-01` | Immediately after the controlled parser failure, a fresh-worker run of the valid ASS fixture completed without a page reload. MediaInfo read all bytes in 45 ms; EBML extraction read all bytes in 6 ms and reproduced 3 cues / 220 WebVTT bytes with zero Unicode replacement characters. | Pass |
+
+Firefox exposed no `performance.memory` values to the harness, so baseline,
+peak and increase were all unavailable rather than measured as zero. These
+small-fixture results prove deterministic extraction, metadata preservation and
+unsupported-image handling plus parser-failure recovery in Firefox. The macOS
+large-file memory, cancellation, refresh and concurrent-upload gates remain
+open.
+
+### macOS small-fixture comparison
+
+Safari, Chrome and Firefox produced identical track classifications, per-track
+cue counts, aggregate WebVTT byte counts and Unicode-validity results for every
+supported fixture. All three returned the same controlled parser error and then
+completed a valid extraction without a page reload. No browser-specific
+functional divergence appeared in this bounded matrix. Memory observations are
+not comparable across browsers: Chrome exposed only a page-level snapshot,
+while Safari and Firefox exposed no `performance.memory` values. This finding
+must not be extrapolated to the pending large-file runs.
+
 ## Browser matrix
 
 Run each applicable media label in:
@@ -211,4 +293,9 @@ Copy one row per media/browser scenario.
 
 ## Remaining operator inputs
 
-- Access to the Windows and macOS browsers listed above.
+- Firefox on Windows.
+- `mkv-large-01` plus the disposable upload harness on macOS for large-file
+  memory, cancellation, refresh and concurrent-upload measurements in Safari,
+  Chrome and Firefox.
+- An explicit support-target decision for Edge on macOS; record it as `Not
+  applicable` if it is not intentionally supported.
