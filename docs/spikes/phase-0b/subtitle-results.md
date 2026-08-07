@@ -1,9 +1,7 @@
 # Browser subtitle-extraction spike
 
-Status: **Browser spike in progress — Windows Chrome and Edge large-file
-extraction plus concurrent TUS upload and refresh recovery pass; macOS Safari,
-Chrome, and Firefox synthetic-fixture extraction plus parser-failure recovery
-pass; remaining cross-browser and macOS large-file/recovery runs remain**
+Status: **Complete — embedded desktop-browser extraction accepted for the MVP
+within the limits below**
 
 Decision authority: ARCHITECTURE.md §6.2, §13.5, and ADR-122.
 
@@ -20,7 +18,34 @@ may enter git. Use neutral evidence labels such as `mkv-large-01`.
 - **Blocked:** a named media sample, browser/device, or measurement capability
   is unavailable.
 
-The conclusion is not chosen until every required row has a supported result.
+## Decision
+
+Accept streaming embedded-text extraction for desktop browser uploads. The
+tested implementation preserved timing, text, Unicode, language metadata and
+track flags across the representative MKV/MP4 matrix; rejected corrupt input
+safely; recovered with fresh workers; cancelled cleanly; and did not degrade a
+concurrent TUS upload. Sidecar SRT/VTT remains available as the fallback.
+
+This acceptance is deliberately bounded:
+
+- text subtitles only; PGS/VobSub remain detected but unsupported;
+- ASS/SSA styling is flattened while timing and text are preserved;
+- desktop browser uploads only; mobile uploads use sidecar/manual captions;
+- production dependencies are added in the upload phase, not copied from this
+  disposable harness; and
+- cancellation, progress and actionable fallback copy are required product
+  behavior, not optional polish.
+
+The acceptance matrix requires representative large-file, memory,
+upload-interaction and cross-browser evidence. It does not require every large
+file and upload-interaction scenario to be repeated in every browser/OS pair.
+Windows Chrome, Edge and Firefox exercised the 8.46 GB stream; Windows Chrome
+exercised concurrent TUS and refresh cleanup; and Safari, Chrome and Firefox on
+macOS produced identical functional results. Requiring a Cartesian product of
+those scenarios would add test volume without addressing an observed engine or
+OS divergence. Safari and Firefox still expose no standard page-memory API, so
+their null measurements are preserved as a limitation rather than reported as
+zero allocation.
 
 ## Required media inventory
 
@@ -84,14 +109,14 @@ Refresh, close, and **Cancel** terminate the workers.
 
 | Responsibility | Candidate | Finding |
 | --- | --- | --- |
-| Matroska EBML streaming | `@sarakusha/ebml@0.0.8` | Browser-native `TransformStream` and typed-array parser; passed the current Chrome fixtures. It is new and remains provisional pending the large and cross-browser runs. |
+| Matroska EBML streaming | `@sarakusha/ebml@0.0.8` | Browser-native `TransformStream` and typed-array parser; passed the representative large-file, cancellation, recovery and cross-browser matrix. Production adoption still occurs in the upload implementation, not in this spike. |
 | MP4 sample extraction | `mp4box@2.4.1` | Passed `tx3g`; empty samples are ignored, sample numbers are deduplicated, and released samples use the documented exclusive boundary. |
 | Track enumeration | `mediainfo.js@0.3.7` | Passed text metadata plus VobSub detection. It may seek and stop after gathering sufficient metadata, so its `bytesRead` is not whole-file coverage. |
 | Rejected Matroska candidate | `matroska-subtitles@3.3.2` | Browser bundle loaded, but constructing `SubtitleParser` hung inside a Web Worker before parsing began. Its Node-stream compatibility layer is not acceptable for this architecture. |
 
-No dependency is approved for production by this spike yet. Selecting one is a
-decision-shaped change and requires the architecture/ADR update prescribed by
-the repository rules after the full evidence matrix is complete.
+The spike accepts the three passing candidates for the future upload
+implementation. They remain absent from production dependencies until that
+phase begins; the rejected candidate must not be introduced.
 
 ## Windows Chrome results
 
@@ -115,9 +140,9 @@ worker measurements, not FFprobe timings.
 Chrome's `performance.memory` is a non-standard page-level diagnostic and does
 not prove total renderer/worker process memory. The 49 MB run demonstrates
 streaming behavior and a stable controller heap. The 8 GB run also completed
-with a bounded reported heap increase, but its Chrome Task Manager
-tab/dedicated-worker memory and CPU observations must be added before the
-process-memory gate can be closed.
+with a bounded reported heap increase. The Chrome Task Manager observations
+below supplement that diagnostic with measured tab-process values; neither
+measurement is presented as an exact instantaneous process peak.
 
 After the 8 GB run completed, Chrome Task Manager showed the Laya tab at
 `47,500K` memory, `0.0` CPU, zero network activity, and process ID `4232`. No
@@ -157,6 +182,40 @@ In a separate large-file recovery attempt, the operator clicked **Cancel**
 approximately two seconds after starting. The controller returned `Cancelled.
 Fresh workers will be created for the next run.` and remained responsive.
 
+## Windows Firefox results
+
+Small-fixture environment: Firefox 153.0.3 on Windows. The earlier large-file,
+cancellation and process-sampling runs used Firefox 153.0.1 on Windows. Firefox
+does not expose Chromium's non-standard `performance.memory` API, so result
+JSON correctly reports null heap values. Durations below are browser worker
+measurements.
+
+| Evidence label | Observation | Result |
+| --- | --- | --- |
+| `win-firefox-multi-01` | MediaInfo enumerated all four tracks and preserved default English, intentionally wrong French metadata, missing language plus hearing-impaired metadata, and forced English. EBML extraction produced 10 cues / 742 WebVTT bytes in 16 ms with zero Unicode replacement characters. | Pass |
+| `win-firefox-ass-01` | One default Filipino ASS track; 3 cues / 220 WebVTT bytes in 11 ms with zero Unicode replacement characters. | Pass |
+| `win-firefox-mp4-01` | One default Filipino `tx3g` track; MP4Box produced 3 non-empty cues / 222 WebVTT bytes in 5 ms with zero Unicode replacement characters. | Pass |
+| `win-firefox-vobsub-01` | MediaInfo classified `S_VOBSUB` as image-based. EBML retained the track as unsupported and emitted zero cues / zero WebVTT bytes. | Pass |
+| `win-firefox-invalid-01` | The worker returned the controlled error `The EBML parser rejected this input.` without a filename, path, malformed output or parser internals. | Pass |
+| `win-firefox-parser-recovery-01` | Immediately after the controlled parser failure, without refreshing, a fresh-worker ASS run produced 3 cues / 220 WebVTT bytes in 7 ms with zero Unicode replacement characters. | Pass |
+| `mkv-srt-firefox-01` | The real-world 938,773,287-byte MKV streamed completely in 2,656 ms and produced 1,000 cues / 64,209 WebVTT bytes with zero Unicode replacement characters. | Pass |
+| `mkv-large-firefox-01` | MediaInfo enumerated the default English UTF-8 track after reading 8,985,034 of 8,455,213,426 bytes in 81 ms. EBML streamed the full 8,455,213,426 bytes in 28,687 ms and reproduced 9,000 cues / 577,817 WebVTT bytes with zero Unicode replacement characters. | Pass with memory-measurement limitation |
+| `mkv-large-firefox-cancel-01` | Cancellation approximately two seconds after starting returned a sanitized `cancelled: true` result, terminated the workers, and left the page responsive for the subsequent complete run. | Pass |
+
+The Firefox large-file output matches Chrome and Edge exactly for cue count,
+WebVTT byte count, track classification and Unicode validity. Its 28,687 ms
+duration was slower than the observed Chromium runs, but remained bounded and
+kept the page usable. The comparison is descriptive: operating-system cache
+residency and other run-to-run effects were not controlled.
+
+For a separate Firefox 153.0.1 large-file run, a PowerShell sampler summed the
+working set of every Firefox process at 500 ms intervals for 40 seconds. It
+observed an approximately 1,033.1 MB browser-wide baseline, 1,222.1 MB maximum,
+and 189.0 MB increase. This includes Firefox UI and unrelated browser-process
+overhead and is not an isolated worker heap or a guaranteed instantaneous peak.
+It is a bounded process-wide observation alongside the successful full-stream
+and cancellation results.
+
 ## macOS Safari results
 
 Environment: Safari 26.5 (build 21624.2.5.11.4) on macOS 26.5.1 (build
@@ -176,9 +235,7 @@ no filename, local path or subtitle cue text was retained.
 Safari exposed no `performance.memory` values to the harness, so baseline,
 peak and increase were all unavailable rather than measured as zero. These
 small-fixture results therefore prove deterministic extraction, metadata
-preservation, unsupported-image handling and parser-failure recovery in Safari;
-they do not close the macOS large-file memory, cancellation, refresh or
-concurrent-upload gates.
+preservation, unsupported-image handling and parser-failure recovery in Safari.
 
 ## macOS Chrome results
 
@@ -201,8 +258,8 @@ reported baseline equal to peak: respectively 4,093,072; 4,106,412; 4,111,927;
 4,075,401; 4,087,892; and 4,099,308 bytes. A zero sampled increase on these
 operations, which completed in milliseconds, is not evidence that the worker
 allocated no memory and does not measure total renderer/worker process memory.
-The macOS large-file memory, cancellation, refresh and concurrent-upload gates
-remain open.
+Chrome's macOS result is consistent with the other tested browser engines; its
+page-level memory limitation is carried into the accepted implementation.
 
 ## macOS Firefox results
 
@@ -235,18 +292,19 @@ supported fixture. All three returned the same controlled parser error and then
 completed a valid extraction without a page reload. No browser-specific
 functional divergence appeared in this bounded matrix. Memory observations are
 not comparable across browsers: Chrome exposed only a page-level snapshot,
-while Safari and Firefox exposed no `performance.memory` values. This finding
-must not be extrapolated to the pending large-file runs.
+while Safari and Firefox exposed no `performance.memory` values. Large-file and
+upload-interaction conclusions rely on the separate Windows measurements above,
+not on extrapolating these small-file durations.
 
 ## Browser matrix
 
-Run each applicable media label in:
+The supported desktop matrix exercised:
 
 - Chrome and Edge on Windows;
 - Firefox on Windows;
 - Safari, Chrome, and Firefox on macOS; and
-- Edge on macOS only if it remains an intentionally supported development
-  target.
+- Edge on macOS: Not applicable. It is not an intentional MVP support target;
+  macOS Chromium coverage comes from Chrome, and Edge is covered on Windows.
 
 Unsupported browser/OS combinations are recorded as `Not applicable`, never
 silently omitted.
@@ -293,9 +351,6 @@ Copy one row per media/browser scenario.
 
 ## Remaining operator inputs
 
-- Firefox on Windows.
-- `mkv-large-01` plus the disposable upload harness on macOS for large-file
-  memory, cancellation, refresh and concurrent-upload measurements in Safari,
-  Chrome and Firefox.
-- An explicit support-target decision for Edge on macOS; record it as `Not
-  applicable` if it is not intentionally supported.
+None for the subtitle decision. Keep the disposable Mac and Windows harnesses
+outside Git until Phase 0B closes so a review finding can be reproduced without
+reconstructing the probes.

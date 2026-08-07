@@ -1,7 +1,7 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.3.11 D1 baseline · August 2, 2026*
-*This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, progress keyed to a provider video asset, or browser subtitle extraction as already proven as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
+*Private streaming platform · v1.3.12 D1 baseline · August 6, 2026*
+*This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, or progress keyed to a provider video asset as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
 
 ---
 
@@ -13,7 +13,7 @@ Rules for maintaining it: any material change to the video provider, application
 
 **Verification discipline.** No architectural decision may rest on an unverified assumption about what a provider does, how a client behaves, or what a service costs. Provider behavior that remains uncertain is explicitly marked as a spike, support question, or implementation gate—not written as fact. Prices and capabilities were rechecked in July 2026; re-verify before launch and before enabling paid add-ons.
 
-**Approval status.** Cloudflare D1 is approved as the application database. Clerk is the accepted managed authentication provider from Phase 0B evidence; production integration remains out of scope until Phase 1, and the production-instance isolation plus real-Philippines validation gates remain open. The browser subtitle-extraction path is **provisionally accepted** and cannot graduate into the upload implementation until its Phase 0B spike passes. Duplicate same-language caption behavior at Bunny is also an implementation gate.
+**Approval status.** Cloudflare D1 is approved as the application database. Clerk is the accepted managed authentication provider from Phase 0B evidence; production integration remains out of scope until Phase 1, and the production-instance isolation plus real-Philippines validation gates remain open. Desktop-browser embedded-text subtitle extraction is accepted from the Phase 0B matrix within ADR-122's explicit limits. Bunny duplicate-caption behavior and provider-key semantics are also decided in ADR-122.
 
 ---
 
@@ -65,7 +65,7 @@ No 4K (1080p cap), no live streaming, no watch parties or chat, no smart-TV apps
 
 **Buy the undifferentiated plumbing; build the experience.** Transcoding, CDN delivery, adaptive streaming and authentication infrastructure are solved problems. Our differentiation is the client experience, metadata quality, subtitle reliability and recommendation honesty.
 
-**Boring technology, one provisional novelty budget.** Every component is mature and heavily documented except client-side embedded-subtitle extraction. That path is intentionally isolated, time-boxed and tested before the rest of the upload experience depends on it.
+**Boring technology, one measured novelty budget.** Client-side embedded-subtitle extraction is the one less-established component. ADR-122 accepts it only after a time-boxed representative matrix and keeps sidecar subtitles as the operational fallback.
 
 **The API never touches video bytes.** The control plane—authorization, metadata, progress, recommendations and provider commands—runs through our code. The data plane—TUS upload chunks, HLS segments, MP4 downloads and published VTT files—flows only between clients and the video provider/CDN.
 
@@ -97,7 +97,7 @@ No 4K (1080p cap), no live streaming, no watch parties or chat, no smart-TV apps
                             never through our API
 
  Upload: client ── TUS resumable ──▶ Bunny Stream ── signed webhook ──▶ API
- Subtitles (provisional): Web Worker parse ──▶ API ──▶ Bunny caption API / VTT delivery
+ Subtitles: Web Worker parse ──▶ API ──▶ Bunny caption API / VTT delivery
 ```
 
 **Database access boundary.** Web and mobile clients never receive a D1 binding and cannot query application tables. They authenticate through the selected managed identity provider, send its session token to the Worker, and the Worker verifies the issuer, audience, signature and expiry before applying application permissions and querying D1 through its native binding.
@@ -301,20 +301,20 @@ The metadata-repair screen in DESIGN.md §10 remains a first-class feature. With
 
 ### 6.1 Provider facts and unresolved provider behavior
 
-Bunny exposes per-video caption add/delete APIs keyed by a caption shortcode and returns caption data in video/play-data responses. The route shape means same-language variants require an explicit provider test or support answer before the schema-to-provider mapping is considered final.
+Bunny exposes per-video caption add/delete APIs keyed by a caption shortcode and returns caption data in video/play-data responses. Phase 0B measured that the shortcode accepts one to three lowercase ASCII letters and acts as the unique provider key: `en`, `sdh` and `frc` coexisted and rendered as three distinct labeled tracks. Laya therefore treats this shortcode as an opaque provider key. Canonical language, label, default, forced and SDH semantics belong to Laya and must never be inferred from that key. Allocate the next unused three-letter key (`aaa` through `zzz`) per provider video, persist it with the track, keep it stable across replacements and never reuse it during that video asset's lifetime; this makes retries deterministic and avoids an old URL identifying a different track.
 
 Bunny can process supported embedded multi-audio tracks after multi-audio support is enabled for the video library. This is **not** "zero effort for every source": provider codec, channel-layout and language-code limitations still apply and must be surfaced as processing errors rather than silently dropped.
 
 ADR-140 requires a caption-scoped Edge Rule that sets both browser and CDN cache time to zero for `*/captions/*`. The Phase 0B add/replace/delete retest passed for direct CDN reads and a fresh player session without a broad pull-zone purge. The rule must exist before the first production caption is published: it governs new responses but cannot retroactively evict a caption already cached by a client before the rule existed.
 
-### 6.2 Provisional primary path: browser extraction during upload
+### 6.2 Accepted primary path: browser extraction during upload
 
-The target design remains a streaming Matroska/EBML parser in a Web Worker for MKV text tracks and MP4Box.js for supported MP4 text tracks. The browser already has the selected file, so extraction can run alongside TUS without routing the source through our API.
+The accepted implementation approach uses `mediainfo.js` for track enumeration, `@sarakusha/ebml` as a streaming Matroska/EBML parser in a Web Worker for MKV text tracks, and `mp4box` for supported MP4 text tracks. The Phase 0B harness passed with versions 0.3.7, 0.0.8 and 2.4.1 respectively; production integration must pin reviewed versions and rerun the fixtures if those versions change. The browser already has the selected file, so extraction can run alongside TUS without routing the source through our API.
 
 ```text
 User selects file
   ├── TUS resumable upload ─────────────▶ Bunny Stream
-  └── Web Worker parse (provisional)
+  └── Web Worker parse
         ├── enumerate subtitle tracks and language metadata
         ├── extract supported text tracks
         ├── convert SRT/ASS/mov_text → WebVTT
@@ -322,7 +322,7 @@ User selects file
         └── POST small VTT payloads ──▶ API ──▶ provider/application caption path
 ```
 
-This is a hypothesis until the Phase 0B spike passes. Do not claim a fixed memory footprint or that parsing finishes before upload until benchmarks from the actual library demonstrate it.
+Phase 0B accepted this path for desktop browser uploads. The representative matrix covered an 8.46 GB MKV, multiple/mis-tagged tracks, SRT, ASS, MP4 `mov_text`, Filipino/Unicode content, VobSub rejection, Chrome/Edge/Firefox on Windows, Safari/Chrome/Firefox on macOS, cancellation, refresh, parser recovery and concurrent TUS upload. Output was deterministic across browsers; the concurrent upload showed no measured degradation. Browser memory APIs remain incomplete, so the implementation must stay streaming, cancellable and recoverable and must not claim a fixed memory footprint. Mobile uploads remain on sidecar/manual subtitles.
 
 #### Phase 0B acceptance matrix
 
@@ -338,11 +338,11 @@ The spike must test:
 - Duplicate same-language tracks such as English, English SDH and English forced.
 - Bunny add/replace/delete behavior and stale-caption behavior.
 
-**Pass condition:** extraction is reliable on the representative matrix without unacceptable browser memory, upload degradation or corrupted timing. **Fail condition:** S1 embedded extraction becomes a deferred enhancement; S2 sidecar files become the MVP path.
+**Recorded result:** Pass on August 6, 2026. Extraction was reliable on the representative matrix without corrupted timing, invalid Unicode, unbounded observed memory or measured upload degradation. The matrix requires cross-browser functional coverage plus representative large-file/memory/upload-interaction coverage; it does not require their full Cartesian product. Edge on macOS is not an intentional MVP target because Chrome supplies macOS Chromium coverage and Edge is covered on Windows. Reproducible evidence and limitations live in `docs/spikes/phase-0b/subtitle-results.md`.
 
 ### 6.3 Source hierarchy
 
-**S1 · Embedded (provisional automatic)** — enabled only after §6.2 passes.
+**S1 · Embedded (automatic on supported desktop browser uploads)** — streaming Web Worker extraction for supported MKV/MP4 text tracks under ADR-122.
 
 **S2 · Sidecar** — dropzone accepts `.srt`, `.vtt` and supported `.ass` files beside the video; also available post-publication through "add subtitles."
 
@@ -380,7 +380,7 @@ Offline bundles contain the signed MP4 plus every selected published VTT. The lo
 
 ## 7. Core flows
 
-**Upload:** client requests upload session → API validates uploader role, file metadata, quota and concurrency (2/user) → API creates Bunny video object and returns short-lived TUS credentials → client uploads directly to Bunny → optional subtitle worker runs only if ADR-122 has passed → Bunny transcodes → signed webhook is persisted and processed idempotently → asset becomes `ready` → metadata match runs → title publishes or enters repair queue.
+**Upload:** client requests upload session → API validates uploader role, file metadata, quota and concurrency (2/user) → API creates Bunny video object and returns short-lived TUS credentials → client uploads directly to Bunny while the optional subtitle worker extracts supported embedded text tracks → Bunny transcodes → signed webhook is persisted and processed idempotently → asset becomes `ready` → uploader confirms/relabels extracted tracks → metadata match runs → title publishes or enters repair queue. Unsupported, failed or mobile extraction falls back to sidecar/manual captions without blocking the video upload.
 
 **Playback:** client requests a playback session for a `playable` → API verifies profile, membership and publication → API creates a session and returns a short-lived signed HLS URL plus published tracks → player streams directly from Bunny CDN → progress reports every 15 seconds and on pause, seek, background and completion.
 
@@ -482,7 +482,7 @@ Reversed and superseded decisions remain in the register because the reasoning t
 | **ADR-119** | Hyperdrive + `pg` for Worker-to-Supabase connectivity | Superseded by ADR-126 | Native D1 binding removes the external Postgres connection and pooling layer. |
 | **ADR-120** | API-only Supabase application-data access in a non-public schema | Superseded in implementation by ADR-128 | The API-only principle remains; D1 has no client binding or Postgres schema/RLS model. |
 | **ADR-121** | Stable `playable` identity for movie/episode progress | Accepted | Provider assets are replaceable; progress, playback sessions and downloads reference `playable_id`. |
-| **ADR-122** | Subtitle extraction and caption-key mapping are provisional | Provisionally accepted | Time-boxed Phase 0B spike, representative file/browser matrix and Bunny duplicate-language test determine the MVP path. |
+| **ADR-122** | Desktop-browser embedded-text extraction; opaque Bunny caption keys | Accepted | Phase 0B accepted `mediainfo.js` + `@sarakusha/ebml` + `mp4box` after the representative browser/file, large-file, recovery, memory and concurrent-upload matrix passed. Supported desktop uploads extract text tracks in streaming Web Workers; sidecars remain the fallback, mobile extraction is deferred, PGS/VobSub remain unsupported and ASS styling is flattened. Bunny's one-to-three-letter shortcode is an opaque stable provider key; Laya owns language/label/default/forced/SDH semantics. |
 | **ADR-123** | Offline authorization has an expiry and best-effort revocation | Accepted | Offline devices cannot receive immediate revocation. Removal occurs at reconnect or expiry; resumable tasks reconcile on startup. |
 | **ADR-124** | Cost model uses explicit storage/viewing assumptions and scenarios | Accepted | Opaque ranges are rejected. Actual encoded/delivered GB drive alerts and budget decisions. |
 | **ADR-125** | Invitation lifecycle and API idempotency conventions | Accepted | One-time hashed invitations, cursor pagination, request IDs and retry-safe creation are defaults from the first migration. |
@@ -623,9 +623,9 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 
 1. ~~Managed authentication provider~~ **Decided in ADR-127:** Clerk is selected from the completed Auth0-vs-Clerk browser/physical-iPhone matrix. Phase 1 must create the separate production instance and prove dev-token rejection before enabling protected production routes; a trusted real-Philippines reliability run remains a pre-launch gate.
 2. ~~Bunny Stream primary/replication region~~ **Decided in ADR-139:** Frankfurt is the required Stream main storage point; launch without replicas and add one only after measurements justify an irreversible region addition.
-3. **Duplicate same-language captions:** can Bunny publish English, English SDH and English forced simultaneously, and what provider key should each use? Phase 0B test/support answer required.
+3. ~~Duplicate same-language captions~~ **Decided in ADR-122:** Bunny published standard, SDH and forced captions simultaneously under distinct one-to-three-letter lowercase keys. Treat the key as opaque and keep canonical language plus track semantics in Laya.
 4. ~~Caption mutation caching~~ **Decided in ADR-140:** provision the caption-scoped browser/CDN zero-cache Edge Rule before publishing captions; normal replacement and deletion do not purge the whole pull zone. Pre-rule browser entries are explicitly outside the rule's retroactive reach.
-5. **Subtitle extraction:** Phase 0B determines whether S1 embedded extraction ships in MVP or S2 sidecar becomes the initial path.
+5. ~~Subtitle extraction~~ **Decided in ADR-122:** S1 embedded-text extraction ships for supported desktop browser uploads; S2 sidecar/manual captions remain the fallback and the mobile path.
 6. **Canonical originals location:** select the physical drive, backup policy and habit that keeps ADR-110 true.
 7. **Offline authorization period:** choose the initial number of offline days and renewal behavior.
 8. **Series at launch:** full season/episode browsing in Phase 3 or movies-first. Movies-first remains the cheapest meaningful scope cut.
@@ -662,6 +662,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.3.9 | Jul 30, 2026 | Post-0B-evidence review applied. Header version re-synced with this changelog (the v1.3.8 row landed without the title-line bump). §13.13 records the measured encoded-storage gate: `movie-01` stored 8.17× its source (≈4.7 GB per catalog hour versus §11.2's 3.0 GB baseline), so original-retention and MP4-fallback configurability need a documentation/support answer and §11.2 needs re-baselining from measurements before Phase 1 Bunny integration. |
 | v1.3.10 | Jul 31, 2026 | Bunny support evidence reconciled. ADR-139 accepts Frankfurt as Stream's required main storage point, launches without irreversible replicas, and distinguishes the retained two-copy budget sensitivity from deployed topology. TUS readiness now distinguishes API status `4` from webhook status `3`. The support-directed caption retest passed; ADR-140 requires a path-scoped browser/CDN zero-cache Edge Rule before first publication, rejects broad pull-zone purges for normal mutations, and preserves the non-retroactive browser-cache caveat. |
 | v1.3.11 | Aug 2, 2026 | Phase 0B authentication decision recorded. ADR-127 selects Clerk after symmetric React and physical-iPhone testing; ADR-115 starts with Clerk production email delivery; §3.2, §8.1, §11 and §13 are reconciled. Auth0 remains technically viable but rejected on separate-environment cost, external production-email dependency and additional configuration. Production integration remains deferred to Phase 1; production-instance isolation and real-Philippines reliability remain explicit gates. |
+| v1.3.12 | Aug 6, 2026 | Phase 0B subtitle decision recorded. ADR-122 accepts streaming embedded-text extraction for supported desktop browser uploads after the Windows/macOS browser, 8.46 GB, cancellation/recovery, memory and concurrent-TUS matrix passed. PGS/VobSub, flattened ASS styling, mobile sidecars and incomplete browser memory APIs remain explicit limits. Bunny's tested one-to-three-letter caption shortcode is now an opaque stable provider key; Laya owns language and track semantics. Edge on macOS is Not applicable to the MVP matrix. |
 
 ---
 

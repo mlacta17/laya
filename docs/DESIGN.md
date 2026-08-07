@@ -1,6 +1,6 @@
 # Project Laya — Design Program
 
-*Private streaming platform · Design plan v0.3.1 · August 2026 · Project Laya · Authority: ARCHITECTURE.md v1.3.11*
+*Private streaming platform · Design plan v0.3.2 · August 2026 · Project Laya · Authority: ARCHITECTURE.md v1.3.12*
 
 ---
 
@@ -8,7 +8,7 @@
 
 This document answers one question: **what do I design, in what order, and how do I know when a phase is done?** It is the design counterpart to the architecture document and shares its sequencing, because design that runs on a different rhythm from engineering produces beautiful screens nobody can build and built screens nobody designed.
 
-**Verification status.** The technical constraints below are grounded in the verified decisions of ARCHITECTURE.md v1.3.11 — see its ADR register, especially ADR-121 (stable playables), ADR-122 (subtitle extraction provisional), ADR-126/127 (D1; Clerk authentication selected), and ADR-133 (lean catalog surface). Two of them shape design scope materially:
+**Verification status.** The technical constraints below are grounded in the verified decisions of ARCHITECTURE.md v1.3.12 — see its ADR register, especially ADR-121 (stable playables), ADR-122 (desktop-browser embedded-text extraction accepted with sidecar/manual fallback), ADR-126/127 (D1; Clerk authentication selected), and ADR-133 (lean catalog surface). Two of them shape design scope materially:
 
 1. **Quality is sometimes a visible user choice** (per ADR-104). The platform (Bunny Stream) provides silent adaptive HLS, but constrained connections — the Philippines case — still warrant explicit control: a "Data saver / quality" preference (Design Phase 2) and a quality control in the player (Design Phase 1), plus a per-download quality choice on mobile.
 
@@ -152,7 +152,7 @@ This phase is where a home-built product usually reveals itself as home-built, a
 
 *Getting the file in.* Drag-drop or picker, size and format guidance up front, a real progress indicator for what may be a multi-GB transfer over a friend's mediocre connection, and resumability messaging if the connection drops.
 
-*Confirming subtitles.* Embedded extraction is **provisional until the Phase 0B spike passes** (ADR-122), so this flow is designed in two states, both part of D3's definition of done. **If the spike passes:** the upload runs a parallel subtitle scan whose results surface as a track list — "Found subtitles: English, Filipino" — with relabel controls (language tags in wild files are frequently missing or wrong), plus the honest message for image-based tracks ("these can't be imported — attach an .srt"). **If the spike fails:** the same surface reads "embedded subtitles can't be imported yet — attach an SRT/VTT, or continue without subtitles," and the sidecar attach affordance is promoted to the primary path.
+*Confirming subtitles.* ADR-122 accepts embedded-text extraction for supported desktop browser uploads. The upload runs a parallel subtitle scan whose results surface as a track list — "Found subtitles: English, Filipino" — with relabel controls because language tags are frequently missing or wrong. Image-based tracks get the honest message "These can't be imported — attach an SRT or VTT." Failed extraction and mobile uploads keep the same sidecar attach affordance as an immediate fallback; a subtitle failure never strands or discards the video upload.
 
 *Identifying what it is.* The system must match `The.Northman.2022.1080p.WEB.mkv` to a TMDB record. When it matches confidently, confirm it with poster and title ("Is this The Northman (2022)?"). When it doesn't, the user must be able to search and pick the right title manually. **This screen is the difference between a working upload feature and a permanent operator chore**, and it is the one most likely to be skipped in scoping.
 

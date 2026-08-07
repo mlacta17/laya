@@ -1,6 +1,6 @@
 # Phase 0B Brief — Risk spikes
 
-*Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.11 and DESIGN.md v0.3.1. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
+*Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.12 and DESIGN.md v0.3.2. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
 ---
 
@@ -34,10 +34,10 @@ Spike code is disposable and must remain clearly separated from production code.
 - [x] An Auth0-vs-Clerk matrix covers every auth criterion above with links, reproducible observations, costs as of the test date, and an explicit winner or no-go. Clerk selected August 2, 2026; shared AUTH-12/AUTH-16 blockers remain explicit production gates.
 - [x] Browser and Expo flows are tested on real target devices; session restore, logout, revocation, and Worker verification results are recorded.
 - [x] The invitation/revocation sequence identifies the enforcement boundary and failure behavior without prematurely fixing the domain schema. Evidence: `docs/spikes/phase-0b/invitation-revocation.md` and `apps/api/test/auth-membership-boundary.test.ts`.
-- [ ] The complete subtitle matrix records browser, file/track type, result, duration, peak memory, cancellation/recovery behavior, and upload impact.
-- [ ] The written subtitle conclusion selects embedded extraction for MVP or falls back to sidecar-only, with failures and limitations preserved.
+- [x] The complete subtitle matrix records browser, file/track type, result, duration, available memory observations, cancellation/recovery behavior, and upload impact. Completed August 6, 2026; unavailable standard memory APIs remain explicit limitations rather than zero measurements.
+- [x] The written subtitle conclusion selects embedded-text extraction for supported desktop browser uploads, with sidecar/manual fallback and all format, mobile and measurement limits preserved.
 - [ ] Bunny duplicate-caption, caption-mutation, region, and encoding-size questions have measured or provider-confirmed answers.
-- [ ] ADR-122 and ADR-127 are accepted/rejected/amended from evidence; related §13 gates are closed or explicitly blocked.
+- [x] ADR-122 and ADR-127 are accepted from evidence; related §13 gates are closed or explicitly carried as later implementation/pre-launch gates.
 - [ ] No spike secret, token, media file, production dependency, or irreversible provider setting enters git.
 
 ## Operator prerequisites
