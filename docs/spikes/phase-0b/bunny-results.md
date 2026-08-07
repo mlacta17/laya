@@ -1,8 +1,8 @@
 # Bunny Stream behavior spike
 
-Status: **In progress — single-region library, secure TUS, representative movie,
-short-form storage control, caption mutation, refresh recovery, Bunny support,
-and storage-setting evidence recorded; representative episode remains**
+Status: **Complete — single-region library, secure TUS, representative movie
+and episode, short-form storage control, caption mutation, refresh recovery,
+Bunny support, and storage-setting evidence recorded**
 
 Decision authority: ARCHITECTURE.md §6.1–§6.2, §13.2–§13.4, and ADR-122.
 
@@ -55,9 +55,9 @@ Official references checked 2026-07-29 and 2026-07-30:
 - [x] Disposable video IDs remain ephemeral outside git; no identifier is
       displayed or retained after cleanup.
 - [x] Representative movie remains outside git.
-- [ ] Representative episode fixture remains to be identified outside git.
+- [x] Representative episode remained outside git.
 - [x] Representative movie byte size recorded under a neutral evidence label.
-- [ ] Representative episode byte size remains to be measured.
+- [x] Representative episode byte size recorded under a neutral evidence label.
 - [x] Current primary/replication dashboard options captured without IDs or
       credentials.
 - [x] Original-retention and MP4-fallback scope and current disposable-library
@@ -268,7 +268,7 @@ record only neutral labels and measurements:
 | Label | Source bytes | Duration | Resolution/codecs | Encoded storage bytes | Encoded/source ratio | Encode duration | Messages/failures |
 | --- | ---: | ---: | --- | ---: | ---: | ---: | --- |
 | `movie-01` | 938,773,287 | 5,931.134 s | Source: 1920×808 HEVC, 10-bit 4:2:0; output: H.264 240p–720p | 7,671,300,092 total; 6,732,526,805 excluding original | 8.1716 total; 7.1716 excluding original | Unmeasured: provider timestamps conflict | None |
-| `episode-01` | | | | | | | |
+| `episode-01` | 668,264,087 | 2,649 s | Source: 2160×1080 HEVC, 23.976 fps; output: H.264 240p–1080p | 5,379,983,294 total; 4,711,719,207 excluding original | 8.0507 total; 7.0507 excluding original | Unmeasured: manual upload start was not captured | None |
 
 ### Library settings and short-form control — 2026-08-06
 
@@ -298,12 +298,34 @@ the original or 9.062 GB per content hour without it. Those per-hour values are
 not a catalog forecast: the short control includes a full 1080p ladder and has
 different source bitrate, codec, and duration characteristics from `movie-01`.
 
-The measured storage multipliers are tracked as ARCHITECTURE.md §13.13. The
-setting-scope question is answered, but §11.2 must not be re-baselined from the
-movie plus a synthetic short control. A representative episode remains required.
-Offline downloads (FR-4) are expected to depend on the MP4 fallback path, while
-originals already live on the owner's drive (ADR-110) — so retention at Bunny
-duplicates a copy that already exists.
+### Representative episode result — 2026-08-07
+
+The 44:09 representative episode completed at API status `4`, 100%, with five
+H.264 renditions from `240p` through `1080p`, no transcoding messages, the
+retained original, and MP4 fallback. The exact storage breakdown was:
+
+- 2,433,617,149 encoded-rendition bytes;
+- 2,264,824,508 MP4-fallback bytes;
+- 13,277,550 thumbnail, preview, and miscellaneous bytes;
+- the retained 668,264,087-byte original; and
+- 5,379,983,294 total stored bytes.
+
+Delivery assets alone were 7.0507 times the source; total storage with the
+retained original was 8.0507 times the source. This equals 6.403 GB per content
+hour without the duplicate original or 7.311 GB per content hour with it.
+
+Across `movie-01` and `episode-01`, delivery assets plus MP4 fallback consumed
+4.802 GB per measured content hour after removing Bunny's duplicate originals.
+ARCHITECTURE.md §11.2 rounds that observation up to a 5.0 GB/hour planning
+baseline. ADR-141 disables original retention in the production library because
+ADR-110 keeps canonical originals under owner control, but enables MP4 fallback
+from the first production upload because Bunny does not generate it
+retroactively and Phase 5 offline downloads depend on it.
+
+**Conclusion: pass.** The representative movie and episode, provider-setting
+scope, storage components, region behavior, TUS readiness, caption variants,
+and caption mutation/cache behavior now have measured or provider-supported
+answers. Phase 0B's Bunny gate is complete.
 
 Delete disposable media after the measurements and after any required cache
 observation window.
