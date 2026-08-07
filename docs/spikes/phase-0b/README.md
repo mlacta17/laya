@@ -8,6 +8,9 @@ personal messages, and media files stay outside the repository.
 
 Authentication provider comparison: **complete — Clerk selected**.
 
+Subtitle extraction matrix: **complete — embedded text accepted for supported
+desktop browser uploads; sidecar/manual captions remain the fallback**.
+
 ADR-127 selects Clerk for Phase 1 production integration. Auth0 remains a
 technically viable but rejected spike candidate. No provider SDK, production
 tenant credential, token, or disposable harness enters the production
@@ -66,8 +69,9 @@ the selected provider. Two Clerk production gates remain:
 2. Run the reliability packet through a trusted tester on a real Philippine
    connection before launch (`AUTH-16`).
 
-Phase 0B may now finish its subtitle and Bunny conclusions. Production Clerk
-integration remains Phase 1 scope.
+Phase 0B may now finish its remaining Bunny episode/settings/storage
+measurements. Production Clerk and subtitle integration remain later-phase
+scope.
 
 ## Prepared execution packets
 
