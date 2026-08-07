@@ -8,7 +8,7 @@ Laya is a private, invite-only streaming platform for ~10 friends/family (US + P
 
 1. `docs/ARCHITECTURE.md` is the source of truth for all technical decisions; its §14 changelog is the freshness key. Read the sections relevant to your task before writing code — especially §3.3 (API conventions), §4.0 (D1 schema conventions), and the ADR register (§10).
 2. `docs/DESIGN.md` governs all user-facing surfaces.
-3. The active phase brief defines current scope: read `docs/phases/active/PHASE-0B-BRIEF.md` before starting any task.
+3. The active phase brief defines current scope: read `docs/phases/active/PHASE-1-BRIEF.md` before starting any task.
 4. If the brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins — and say so, because the brief has a bug.
 
 ## Hard rules

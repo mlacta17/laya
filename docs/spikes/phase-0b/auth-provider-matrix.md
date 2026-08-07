@@ -5,7 +5,7 @@ Status: **Complete — Clerk selected; shared production gates carried explicitl
 Candidates: **Auth0 and Clerk**
 
 Decision authority: ARCHITECTURE.md ADR-127 and
-`docs/phases/active/PHASE-0B-BRIEF.md`
+`docs/phases/completed/PHASE-0B-BRIEF.md`
 
 ## Decision method
 
