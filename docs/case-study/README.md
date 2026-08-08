@@ -1,8 +1,9 @@
 # Laya portfolio case-study evidence
 
 This directory preserves sanitized evidence while each decision is fresh.
-It supports the eventual written case study and post-MVP showcase; it is not a
-public site, production-data mirror, or additional Laya runtime environment.
+It supports written and designed case studies plus the future isolated
+interactive demo; it is not a public site, production-data mirror, or
+additional Laya runtime environment.
 
 ## Safety boundary
 

@@ -95,8 +95,9 @@ at implementation time; Phase 0B evidence does not freeze provider SDK versions.
   integration (Phase 5).
 - Recommendations, analytics, transcription, OCR, premium encoding, D1 read
   replication, or Bunny storage replication (Phase 6 or trigger-gated ADRs).
-- A runnable public portfolio showcase, demo environment, production-data
-  mirror, or showcase-only application behavior (post-MVP under ADR-142).
+- A runnable public portfolio demo, production-data mirror, or showcase-only
+  application behavior. ADR-142 makes the interactive demo eligible only after
+  Phase 3 stabilizes the real web experience; Phase 1 captures evidence only.
 - A fourth workspace package, ORM, direct client D1 access, media through the
   Worker, committed secrets, or committed original media.
 

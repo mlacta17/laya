@@ -221,8 +221,11 @@ Portfolio evidence never contains private names or email addresses, secrets,
 tokens, provider identifiers, signed URLs, local media filenames, production
 screenshots with personal data, or media without publication rights. Use
 synthetic fixtures for screenshots and prototypes. Evidence capture must not
-invent extra product work or weaken a phase's definition of done; the runnable
-public showcase remains a separate post-MVP artifact under ADR-142.
+invent extra product work or weaken a phase's definition of done. After Phase
+3 stabilizes the production web experience, a separate interactive demo may
+reuse its real UI with synthetic accounts, catalog and state; it has no private
+or production connectivity and does not pull later product scope forward
+(ADR-142).
 
 ---
 
