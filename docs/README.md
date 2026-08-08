@@ -12,6 +12,10 @@ The master documents remain authoritative over everything, including briefs. But
 
 `glossary.md` defines the handful of project-specific terms (playable, brief, spike, ADR) that appear everywhere else.
 
+`case-study/README.md` defines the sanitized evidence practice used to build the
+portfolio case study over time. It is an evidence index and template, not a
+public showcase or another application environment.
+
 ## Current phase evidence
 
 Phase 0B observations and go/no-go results live in

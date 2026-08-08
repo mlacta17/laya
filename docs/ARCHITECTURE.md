@@ -1,6 +1,6 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.3.13 D1 baseline · August 7, 2026*
+*Private streaming platform · v1.3.14 D1 baseline · August 8, 2026*
 *This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, or progress keyed to a provider video asset as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
 
 ---
@@ -213,6 +213,18 @@ Replacing, re-encoding or migrating a Bunny asset does not reset watch history, 
 ### 4.2 Load-bearing state rules
 
 **Authentication identity mapping:** `auth_identities` maps the selected provider issuer + subject to one internal profile. Authorization uses internal profile/library IDs, never email addresses or provider-specific user IDs directly. Provider-account deletion or subject change is handled as an explicit relink/revocation operation.
+
+**Library and profile tenancy:** the MVP exposes one shared Laya library to all
+active members. The `libraries` and `library_memberships` tables remain real
+authorization boundaries—code never substitutes a global-library shortcut—so
+a later multi-library decision does not require replacing domain identity.
+Each invited account resolves to one viewer profile with its own progress,
+history, preferences and recommendation inputs; household profile selection is
+not part of the MVP. Multiple external identities may be explicitly linked to
+the same internal profile, but signing in never creates or selects among
+multiple viewer profiles. Member-contributed titles publish into the shared
+library and retain contributor provenance as domain data when member uploads
+ship in Phase 4.
 
 **Invitation lifecycle:** `created → sent → accepted | expired | revoked`. Invitation tokens are stored as one-way hashes, bound to the intended email, expire, allow one redemption, record the inviter and accepted user, and can be revoked. Public self-registration is rejected even if the external identity provider permits account creation.
 
@@ -502,6 +514,8 @@ Reversed and superseded decisions remain in the register because the reasoning t
 | **ADR-139** | Bunny Stream launches with Frankfurt primary storage and no replicas | Accepted | Bunny support confirmed on 2026-07-31 that Stream's encoders are in Frankfurt, making Frankfurt the main storage point; a U.S. primary is not available. Replication regions cannot be removed without creating a new library and re-uploading its videos. Launch therefore uses one Frankfurt copy while canonical originals remain owner-controlled (ADR-110). Add U.S. or Singapore replication only after measured playback or origin-performance evidence justifies the irreversible storage and migration cost. |
 | **ADR-140** | Bunny captions bypass browser and CDN caching through a path-scoped Edge Rule | Accepted | Before publishing the first production caption, configure the Stream pull zone so `*/captions/*` receives `Override Browser Cache Time = 0` and `Override Cache Time = 0`. Phase 0B verified immediate add/replace/delete consistency through API metadata, direct CDN reads, and a fresh player session while the existing `.m3u8` rule remained separate. Do not purge the whole pull zone for normal caption mutations. The rule is not retroactive: a client that cached a caption before the rule existed can retain that old response and requires an explicit migration/expiry strategy. |
 | **ADR-141** | Bunny production storage keeps MP4 fallback and drops duplicate originals | Accepted | Phase 0B measured a representative movie and episode at 4.802 stored delivery GB per content hour after excluding Bunny-retained originals; §11.2 rounds this to 5.0 GB/hour. Create the production library with `KeepOriginalFiles = false` because canonical originals remain owner-controlled under ADR-110, and `EnableMP4Fallback = true` because Phase 5 offline downloads require MP4 and Bunny applies changes only to later uploads. Validate both settings before the first production upload. Provider-reported bytes, not this planning average, drive actual alerts. |
+| **ADR-142** | Portfolio evidence is continuous; the interactive demo is a production-isolated build | Accepted | Written and designed case studies capture sanitized decision, design, implementation, validation and outcome evidence as each phase happens; reconstructing the reasoning at the end would lose the strongest material. Evidence must use synthetic or redacted data and exclude secrets, provider identifiers, signed URLs, private user data, local media names and unlicensed media. A public interactive demo becomes eligible after the Phase 3 web-experience milestone is stable; it does not wait for mobile, recommendations or every later product phase, and it never blocks them. The demo reuses the real production web UI and contracts so reviewers exercise actual shipped interaction code, but it is separately built and deployed with deterministic synthetic accounts/catalog/progress plus self-produced or openly licensed sample media. It has no production Clerk configuration, API origin, D1 database, Bunny library, secrets, user data, real upload transport or administrative capability. Authentication, upload/processing and other sensitive or cost-bearing flows use explicit demo adapters; progress is local/resettable. A dedicated brief and threat review must define the build boundary, media licenses, reset behavior and CI isolation before demo code begins. |
+| **ADR-143** | MVP uses one shared library and one viewer profile per account | Accepted | All invited members join the same Laya library; published contributions populate that shared catalog while progress, history, preferences and recommendation inputs remain profile-specific. Contributor provenance supports honest future rows such as “From Alex,” but Phase 1 still limits upload to the operator and Phase 6 owns recommendations. Keep `libraries` and `library_memberships` as authorization boundaries and retain internal profiles independent of provider identity. The MVP has no household profile picker: an account resolves to one viewer profile, with explicit identity relinking allowed. Separate libraries or household profiles require a later ADR because they change authorization, invitation, progress and navigation behavior. |
 
 ---
 
@@ -603,8 +617,20 @@ Composition at 100 users under the two-copy sensitivity: Bunny ~$104 (storage $6
 | **4 · Everyone uploads** | Invites, roles, quotas, upload UI, subtitle confirmation, status tracking | "A friend added a movie without messaging me" | |
 | **5 · Mobile + offline** | Expo app, resumable signed-MP4/VTT downloads, expiry/revalidation, progress sync | "My sibling watched on a plane, with subtitles" | |
 | **6 · Polish** | Recommendation rows, Philippine measurements, optional D1 read replication, optional Singapore video replica, optional transcription | "Measured improvements replace assumptions" | |
+| **Portfolio · Interactive demo** (eligible after Phase 3) | Separate public build of the real web experience using synthetic data, licensed sample media and simulated sensitive flows; no production services or data | "A reviewer can explore the real experience without reaching the private product" | |
 
 Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase 0B is a hard gate, not an excuse to expand foundation work indefinitely.
+
+Portfolio evidence capture begins now and follows `docs/case-study/README.md`;
+it is documentation work, not another product phase. Written or designed case
+studies and recorded walkthroughs may ship after sanitization and licensing
+review. The interactive demo is not a third Laya runtime environment and does
+not extend the product's dev/production trust boundary from ADR-132. It is a
+separate public build that becomes eligible only after Phase 3 proves the real
+web experience. Its implementation starts with a dedicated brief; it must
+reuse production UI components without copying them into a long-lived fork,
+and its build must be provably incapable of addressing production services.
+The demo track neither blocks nor pulls forward Phase 4–6 product scope.
 
 ### 12.1 Production sign-off measurements
 
@@ -633,10 +659,11 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 7. **Offline authorization period:** choose the initial number of offline days and renewal behavior.
 8. **Series at launch:** full season/episode browsing in Phase 3 or movies-first. Movies-first remains the cheapest meaningful scope cut.
 9. ~~Product name~~ **Decided: Laya** (Filipino, "freedom" — fits the Play Lexi/Tala naming convention and the product's own thesis). Domain registration remains open.
-10. **Library model:** one shared library or separate friend/family libraries.
-11. **Profile model:** one profile per account or household profiles.
+10. ~~**Library model**~~ **Decided in ADR-143:** one shared Laya library for the MVP. Preserve `libraries` and `library_memberships` as real authorization boundaries; separate friend/family libraries require a later decision.
+11. ~~**Profile model**~~ **Decided in ADR-143:** one viewer profile per invited account for the MVP. Household profile selection is deferred unless a demonstrated need justifies its authorization, progress and navigation complexity.
 12. ~~JWKS refresh cooldown~~ **Decided in ADR-138:** one forced refresh per provider URL per five minutes per Worker isolate; concurrent requests share the in-flight fetch.
 13. ~~**Encoded-storage multiplier and retention levers**~~ **Decided in ADR-141:** the representative movie and episode measured 4.802 GB per content hour after removing duplicate Bunny originals, rounded to §11.2's 5.0 GB/hour planning baseline. Production disables original retention, enables MP4 fallback before its first upload, and uses provider-reported bytes for actual budgets. The 10:34 synthetic control remains a non-representative sensitivity, not part of the baseline.
+14. ~~**Public portfolio demonstration**~~ **Decided in ADR-142:** capture sanitized written/design case-study evidence continuously. After the Phase 3 web-experience milestone is stable, a separate brief may build an interactive demo from the real UI plus synthetic adapters. The demo build must make production API, identity, database, video, upload, administration and secret access structurally impossible and must not pull Phase 4–6 product work forward.
 
 ---
 
@@ -667,6 +694,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.3.11 | Aug 2, 2026 | Phase 0B authentication decision recorded. ADR-127 selects Clerk after symmetric React and physical-iPhone testing; ADR-115 starts with Clerk production email delivery; §3.2, §8.1, §11 and §13 are reconciled. Auth0 remains technically viable but rejected on separate-environment cost, external production-email dependency and additional configuration. Production integration remains deferred to Phase 1; production-instance isolation and real-Philippines reliability remain explicit gates. |
 | v1.3.12 | Aug 6, 2026 | Phase 0B subtitle decision recorded. ADR-122 accepts streaming embedded-text extraction for supported desktop browser uploads after the Windows/macOS browser, 8.46 GB, cancellation/recovery, memory and concurrent-TUS matrix passed. PGS/VobSub, flattened ASS styling, mobile sidecars and incomplete browser memory APIs remain explicit limits. Bunny's tested one-to-three-letter caption shortcode is now an opaque stable provider key; Laya owns language and track semantics. Edge on macOS is Not applicable to the MVP matrix. |
 | v1.3.13 | Aug 7, 2026 | Phase 0B completed. Bunny's representative movie and episode, synthetic sensitivity, settings, regions, TUS, caption variants, and cache behavior are recorded. ADR-141 disables duplicate Bunny originals, retains MP4 fallback from the first production upload, and re-baselines storage to 5.0 GB/catalog hour from the measured 4.802 policy-aligned rate. Cost scenarios are recalculated without a hidden replica reserve; the Phase 1 brief becomes active. |
+| v1.3.14 | Aug 8, 2026 | ADR-142 makes sanitized written/design portfolio evidence a continuous practice and separates it from a public interactive demo. The demo becomes eligible after Phase 3 stabilizes the real web experience—not after every later phase—and must reuse that UI through a separate synthetic-data build structurally disconnected from production identity, API, D1, Bunny, uploads, administration, secrets and private data. ADR-143 closes the Phase 1 tenancy gates with one shared MVP library and one viewer profile per account while preserving explicit library-membership and provider-neutral identity boundaries. DESIGN.md v0.3.3 and the Phase 1 brief add bounded evidence-capture guidance without expanding the product milestone. |
 
 ---
 

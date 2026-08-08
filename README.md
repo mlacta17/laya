@@ -17,6 +17,7 @@ Two living documents are the source of truth. Everything else defers to them:
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | What we're building, how, and **why** — requirements, stack, data model, subsystems, cost model, delivery phases, and the full decision register (ADRs), including reversed decisions and their reasoning |
 | [`docs/DESIGN.md`](docs/DESIGN.md)             | The design program — who the users are, information architecture, design phases D0–D5, and definitions of done for every surface                                                                          |
 | [`docs/phases/`](docs/phases/)                 | One-page briefs scoping each phase — `active/` holds the current brief (auto-loaded by the agent instruction files); `completed/` archives finished briefs with their outcomes                            |
+| [`docs/case-study/`](docs/case-study/)         | Sanitized decision, design, implementation, and validation evidence captured throughout the project for the eventual portfolio case study                                                                 |
 
 **Reading order for a newcomer:** see [`docs/README.md`](docs/README.md) — short version: this README → ARCHITECTURE.md §0–§2 → §12 (where we are) → the active brief in `docs/phases/active/`. The ADR register (§10) answers every "why didn't you just…" question — please read it before proposing changes, because most alternatives were already evaluated and the reasoning is recorded.
 
