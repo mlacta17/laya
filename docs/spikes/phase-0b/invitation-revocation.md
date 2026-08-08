@@ -11,7 +11,7 @@ Authority:
 
 - `docs/ARCHITECTURE.md` §4.2, §8.1, ADR-125, ADR-127, and ADR-132
 - `docs/DESIGN.md` §4, §9, and §13
-- `docs/phases/active/PHASE-0B-BRIEF.md`
+- `docs/phases/completed/PHASE-0B-BRIEF.md`
 
 ## 1. Boundary in one sentence
 

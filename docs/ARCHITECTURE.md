@@ -1,6 +1,6 @@
 # Project Laya — Architecture & Decision Record (Master)
 
-*Private streaming platform · v1.3.12 D1 baseline · August 6, 2026*
+*Private streaming platform · v1.3.13 D1 baseline · August 7, 2026*
 *This file REPLACES all earlier ARCHITECTURE.md versions (v0.1, v0.2, v1.0, v1.0.1, v1.1), ARCHITECTURE-v1.md, and REVIEW-of-uploaded-plan.md. Delete saved copies of those. If a document treats Jellyfin, Caddy, Docker Compose, a dedicated server, Supabase Postgres, Hyperdrive, direct client database access, or progress keyed to a provider video asset as a current decision, it is stale. Companion: DESIGN.md v0.3 (design program, phases D0–D5).*
 
 ---
@@ -501,6 +501,7 @@ Reversed and superseded decisions remain in the register because the reasoning t
 | **ADR-138** | Rate-limit forced JWKS refreshes to once per provider URL per five minutes per Worker isolate | Accepted | A token with an unknown RS256 `kid` may force one refresh so legitimate rotation is discovered, and concurrent requests share that in-flight fetch. A successful or failed forced attempt starts a five-minute cooldown; later unknown keys use the cached set and fail verification without another provider request. This bounds sequential garbage-token amplification to twelve forced requests/hour/isolate. Planned overlapping rotations are unaffected; an unannounced non-overlapping emergency rotation can take at most five minutes to become visible in an already-warm isolate. Auth0 documents five minutes as a representative minimum refresh interval; Clerk recommends caching JWKS and minimizing provider requests. |
 | **ADR-139** | Bunny Stream launches with Frankfurt primary storage and no replicas | Accepted | Bunny support confirmed on 2026-07-31 that Stream's encoders are in Frankfurt, making Frankfurt the main storage point; a U.S. primary is not available. Replication regions cannot be removed without creating a new library and re-uploading its videos. Launch therefore uses one Frankfurt copy while canonical originals remain owner-controlled (ADR-110). Add U.S. or Singapore replication only after measured playback or origin-performance evidence justifies the irreversible storage and migration cost. |
 | **ADR-140** | Bunny captions bypass browser and CDN caching through a path-scoped Edge Rule | Accepted | Before publishing the first production caption, configure the Stream pull zone so `*/captions/*` receives `Override Browser Cache Time = 0` and `Override Cache Time = 0`. Phase 0B verified immediate add/replace/delete consistency through API metadata, direct CDN reads, and a fresh player session while the existing `.m3u8` rule remained separate. Do not purge the whole pull zone for normal caption mutations. The rule is not retroactive: a client that cached a caption before the rule existed can retain that old response and requires an explicit migration/expiry strategy. |
+| **ADR-141** | Bunny production storage keeps MP4 fallback and drops duplicate originals | Accepted | Phase 0B measured a representative movie and episode at 4.802 stored delivery GB per content hour after excluding Bunny-retained originals; §11.2 rounds this to 5.0 GB/hour. Create the production library with `KeepOriginalFiles = false` because canonical originals remain owner-controlled under ADR-110, and `EnableMP4Fallback = true` because Phase 5 offline downloads require MP4 and Bunny applies changes only to later uploads. Validate both settings before the first production upload. Provider-reported bytes, not this planning average, drive actual alerts. |
 
 ---
 
@@ -517,11 +518,13 @@ Monthly video cost =
 ```
 
 ADR-139 sets the launch topology to Bunny's Frankfurt main storage point with
-no replicas. Until the measured storage multiplier in §13.13 is re-baselined,
-the scenario table deliberately retains its former **two-copy cost reserve**;
-that reserve is a budgeting cushion, not a deployed U.S. replica. The model
-uses the currently documented Standard delivery rates of **$0.01/GB for North
-America** and **$0.03/GB for Asia/Oceania**.
+no replicas. ADR-141 disables Bunny original retention and enables MP4 fallback
+before the first production upload. The representative movie/episode sample
+measured 4.802 GB per content hour under that policy, rounded up to 5.0 GB/hour
+for planning. Two-copy figures are now explicit sensitivity rows rather than a
+hidden reserve in the launch estimate. The model uses the currently documented
+Standard delivery rates of **$0.01/GB for North America** and **$0.03/GB for
+Asia/Oceania**.
 
 ### 11.2 Planning assumptions
 
@@ -529,13 +532,13 @@ These are budgeting inputs, not provider guarantees:
 
 | Input | Baseline |
 |---|---:|
-| Encoded storage per catalog hour | 3.0 GB |
+| Encoded storage per catalog hour | 5.0 GB |
 | Delivered data per viewing hour | 1.5 GB |
 | Viewing distribution | 85% U.S. / 15% Philippines |
 | Video ceiling | 1080p |
 | Offline default | 720p |
 | Deployed storage copies at launch | 1 |
-| Storage copies reserved in conservative budget | 2 |
+| Replication sensitivity | 2 copies, modeled separately in §11.5 |
 
 Actual encoded size changes with source complexity, enabled renditions, MP4 fallback, retained originals, codecs and audio tracks. The operator console uses provider-reported bytes; it does not estimate from title count.
 
@@ -557,10 +560,10 @@ Workers Paid currently includes the first 25 billion D1 rows read per month, 50 
 
 | Scenario | Catalog | Monthly viewing | Bunny estimate | Core monthly infrastructure* | With annualized Apple + first-year Google |
 |---|---:|---:|---:|---:|---:|
-| Development / first light | 50 h (~150 GB) | 50 h (~75 GB) | ~$4 | ~$10.50 | Not applicable |
-| Starter production | 100 h (~300 GB) | 200 h (~300 GB) | ~$9.90 | ~$16.40 | ~$26.73 |
-| Typical private use | 300 h (~900 GB) | 750 h (~1,125 GB) | ~$32.63 | ~$39.13 | ~$49.46 |
-| Heavy private use | 500 h (~1,500 GB) | 2,000 h (~3,000 GB) | ~$69 | ~$75.50 | ~$85.83 |
+| Development / first light | 50 h (~250 GB) | 50 h (~75 GB) | ~$3.48 | ~$9.98 | Not applicable |
+| Starter production | 100 h (~500 GB) | 200 h (~300 GB) | ~$8.90 | ~$15.40 | ~$25.73 |
+| Typical private use | 300 h (~1,500 GB) | 750 h (~1,125 GB) | ~$29.63 | ~$36.13 | ~$46.46 |
+| Heavy private use | 500 h (~2,500 GB) | 2,000 h (~3,000 GB) | ~$64 | ~$70.50 | ~$80.83 |
 
 \*Core infrastructure includes Workers Paid with expected included D1 usage, the domain, Bunny and an authentication provider remaining within its free allowance. Taxes are excluded. Expo Starter would add $19 when intentionally enabled. If the selected authentication provider requires a paid plan for acceptable session behavior or production environments, its verified price is added explicitly before approval.
 
@@ -568,14 +571,14 @@ The approved operating envelope runs through the **Heavy private use** scenario 
 
 ### 11.5 User-count growth scenarios
 
-The §11.4 scenarios are workload-shaped; this table maps them to user counts for planning. Assumptions: ~20 viewing hours per user per month; catalog grows with uploaders (100 h at 10 users → ~650 h at 100); blended delivery $0.013/GB (85/15 US/PH); Apple fee applies once mobile ships (20+ columns). The single-region row is ADR-139's launch topology; the two-region row is the retained budget sensitivity if measurements later justify an irreversible replica.
+The §11.4 scenarios are workload-shaped; this table maps them to user counts for planning. Assumptions: ~20 viewing hours per user per month; catalog grows with uploaders (100/200/400/650 h at 10/20/50/100 users); 5.0 stored GB/catalog hour; blended delivery $0.013/GB (85/15 US/PH); Apple and first-year Google fees apply once mobile ships (20+ columns). The single-region row is ADR-139's launch topology; the two-region row is a sensitivity if measurements later justify an irreversible replica.
 
 | Monthly total | 10 users | 20 users | 50 users | 100 users |
 |---|---:|---:|---:|---:|
-| Single-region storage ($0.01/GB) | ~$13 | ~$29 | ~$46 | ~$74 |
-| Conservative two-region ($0.02/GB) | ~$16 | ~$35 | ~$58 | ~$94 |
+| Single-region storage ($0.01/GB) | ~$15 | ~$35 | ~$56 | ~$88 |
+| Two-region sensitivity ($0.02/GB) | ~$20 | ~$45 | ~$76 | ~$121 |
 
-Composition at 100 users under the retained two-copy sensitivity: Bunny ~$79 (storage $40 + delivery $39), Workers+D1 $5, domain ~$1.50, Apple ~$8.25, and Clerk Hobby auth/email plus D1 usage ~$0 within allowances. Marginal cost ≈ $0.40–0.60 per additional active user, almost entirely delivery. Avoiding an unneeded replica saves about $20/month in that scenario and avoids a library migration if the region must later be removed. Every line scales smoothly or is already paid; Clerk Pro or a dedicated email provider is added only when a required feature, measured deliverability issue or allowance breach justifies its verified price (ADR-115/127).
+Composition at 100 users under the two-copy sensitivity: Bunny ~$104 (storage $65 + delivery $39), Workers+D1 $5, domain ~$1.50, Apple ~$8.25, first-year Google ~$2.08, and Clerk Hobby auth/email plus D1 usage ~$0 within allowances. Across the table, marginal cost is approximately $0.80–1.10 per additional active user. Avoiding an unneeded replica saves about $32.50/month at 100 users and avoids a library migration if the region must later be removed. Every line scales smoothly or is already paid; Clerk Pro or a dedicated email provider is added only when a required feature, measured deliverability issue or allowance breach justifies its verified price (ADR-115/127).
 
 ### 11.6 Excluded or trigger-gated costs
 
@@ -593,7 +596,7 @@ Composition at 100 users under the retained two-copy sensitivity: Bunny ~$79 (st
 | Phase | Ships | Milestone sentence | Done |
 |---|---|---|---|
 | **0A · Skeleton** (days) | pnpm workspace, local D1, Worker binding, Vite app, CI, mock JWT issuer, first D1 migrations, deployed health/read-write path | "The API can authenticate a test token and read/write through D1" | Jul 27, 2026 |
-| **0B · Risk spikes** (time-boxed ≤1 week) | Auth0-vs-Clerk browser/Expo spike and decision; invitation/revocation path; subtitle extraction matrix; duplicate-language Bunny caption test; representative encoding-size sample | "The auth, provider and browser unknowns have written go/no-go results" | |
+| **0B · Risk spikes** (time-boxed ≤1 week) | Auth0-vs-Clerk browser/Expo spike and decision; invitation/revocation path; subtitle extraction matrix; duplicate-language Bunny caption test; representative encoding-size sample | "The auth, provider and browser unknowns have written go/no-go results" | Aug 7, 2026 |
 | **1 · First light** | Selected managed auth, admin TUS upload → Bunny → browser playback, stable playable record, progress saved, sidecar subtitles; embedded extraction only if 0B passed | "An invited user logs in, a movie plays with subtitles, and progress persists" | |
 | **2 · Catalog** (largest) | Filename parse → TMDB → attribution/cache handling → artwork → series model → repair queue | "Uploads become real titles with posters, on their own" | |
 | **3 · Experience** | DESIGN.md D1: home, browse, title pages, custom player | "It feels like the product I designed" | |
@@ -633,7 +636,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 10. **Library model:** one shared library or separate friend/family libraries.
 11. **Profile model:** one profile per account or household profiles.
 12. ~~JWKS refresh cooldown~~ **Decided in ADR-138:** one forced refresh per provider URL per five minutes per Worker isolate; concurrent requests share the in-flight fetch.
-13. **Encoded-storage multiplier and retention levers:** the first Phase 0B measurement (`docs/spikes/phase-0b/bunny-results.md`, `movie-01`) stored 8.17× its source bytes — ≈4.7 GB per catalog hour against §11.2's 3.0 GB baseline — with the retained original (~12% of stored bytes) and MP4 fallback (~41%) as the dominant non-rendition components. Before Phase 1 Bunny integration: confirm from official documentation or support whether original retention and MP4-fallback generation are per-library settings; note that offline downloads (FR-4, Phase 5) are expected to depend on the MP4 fallback path while originals already live on the owner's drive (ADR-110); measure the representative episode; then re-baseline §11.2 from measurements rather than the estimate.
+13. ~~**Encoded-storage multiplier and retention levers**~~ **Decided in ADR-141:** the representative movie and episode measured 4.802 GB per content hour after removing duplicate Bunny originals, rounded to §11.2's 5.0 GB/hour planning baseline. Production disables original retention, enables MP4 fallback before its first upload, and uses provider-reported bytes for actual budgets. The 10:34 synthetic control remains a non-representative sensitivity, not part of the baseline.
 
 ---
 
@@ -663,6 +666,7 @@ Design runs one phase ahead of engineering per DESIGN.md where applicable. Phase
 | v1.3.10 | Jul 31, 2026 | Bunny support evidence reconciled. ADR-139 accepts Frankfurt as Stream's required main storage point, launches without irreversible replicas, and distinguishes the retained two-copy budget sensitivity from deployed topology. TUS readiness now distinguishes API status `4` from webhook status `3`. The support-directed caption retest passed; ADR-140 requires a path-scoped browser/CDN zero-cache Edge Rule before first publication, rejects broad pull-zone purges for normal mutations, and preserves the non-retroactive browser-cache caveat. |
 | v1.3.11 | Aug 2, 2026 | Phase 0B authentication decision recorded. ADR-127 selects Clerk after symmetric React and physical-iPhone testing; ADR-115 starts with Clerk production email delivery; §3.2, §8.1, §11 and §13 are reconciled. Auth0 remains technically viable but rejected on separate-environment cost, external production-email dependency and additional configuration. Production integration remains deferred to Phase 1; production-instance isolation and real-Philippines reliability remain explicit gates. |
 | v1.3.12 | Aug 6, 2026 | Phase 0B subtitle decision recorded. ADR-122 accepts streaming embedded-text extraction for supported desktop browser uploads after the Windows/macOS browser, 8.46 GB, cancellation/recovery, memory and concurrent-TUS matrix passed. PGS/VobSub, flattened ASS styling, mobile sidecars and incomplete browser memory APIs remain explicit limits. Bunny's tested one-to-three-letter caption shortcode is now an opaque stable provider key; Laya owns language and track semantics. Edge on macOS is Not applicable to the MVP matrix. |
+| v1.3.13 | Aug 7, 2026 | Phase 0B completed. Bunny's representative movie and episode, synthetic sensitivity, settings, regions, TUS, caption variants, and cache behavior are recorded. ADR-141 disables duplicate Bunny originals, retains MP4 fallback from the first production upload, and re-baselines storage to 5.0 GB/catalog hour from the measured 4.802 policy-aligned rate. Cost scenarios are recalculated without a hidden replica reserve; the Phase 1 brief becomes active. |
 
 ---
 
@@ -680,7 +684,7 @@ Official sources behind the current load-bearing external claims:
 - Clerk React and Expo quickstarts, session revocation, and pricing: <https://clerk.com/docs/react/getting-started/quickstart>, <https://clerk.com/docs/expo/getting-started/quickstart>, <https://clerk.com/docs/reference/backend/sessions/revoke-session>, and <https://clerk.com/pricing>
 - JWKS caching and refresh guidance: <https://clerk.com/docs/guides/sessions/verifying> and <https://support.auth0.com/center/s/article/jwks-endpoint-latency-and-timeout-impact>
 - Expo authentication and AuthSession: <https://docs.expo.dev/develop/authentication/> and <https://docs.expo.dev/versions/latest/sdk/auth-session/>
-- Bunny Stream caption management, replication, and pricing: <https://docs.bunny.net/api-reference/stream/manage-videos/add-caption>, <https://docs.bunny.net/reference/video_deletecaption>, <https://docs.bunny.net/stream/replication>, and <https://docs.bunny.net/stream/pricing>
+- Bunny Stream caption management, replication, pricing, encoding settings, and MP4 behavior: <https://docs.bunny.net/api-reference/stream/manage-videos/add-caption>, <https://docs.bunny.net/reference/video_deletecaption>, <https://docs.bunny.net/stream/replication>, <https://docs.bunny.net/stream/pricing>, <https://docs.bunny.net/stream/encoding>, <https://docs.bunny.net/api-reference/core/stream-video-library/update-video-library>, and <https://docs.bunny.net/stream/mp4-downloads>
 - Bunny Stream play data: <https://docs.bunny.net/api-reference/stream/manage-videos/get-video-play-data>
 - Bunny multi-audio: <https://docs.bunny.net/stream/multi-audio>
 - Expo FileSystem behavior: <https://docs.expo.dev/versions/latest/sdk/filesystem/>

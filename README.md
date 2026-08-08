@@ -6,7 +6,7 @@ _Laya_ is Filipino for "freedom": no subscriptions, no engagement algorithms, no
 
 ## Status
 
-**Phase 0A (Skeleton) is complete; Phase 0B (Risk spikes) is active.** The foundation is deployed and acceptance-tested. Phase 0B now resolves the authentication, subtitle-extraction, and Bunny provider unknowns in writing before feature implementation begins. Track progress in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §12 and the [active brief](docs/phases/active/PHASE-0B-BRIEF.md).
+**Phase 0B (Risk spikes) is complete; Phase 1 (First light) is active.** The foundation and provider/browser decisions are acceptance-tested and recorded. Phase 1 now builds the narrow invited-user → upload → playback → subtitle → progress vertical slice. Track progress in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §12 and the [active brief](docs/phases/active/PHASE-1-BRIEF.md).
 
 ## How this project is organized
 

@@ -2,6 +2,16 @@
 
 *Project Laya · Brief v0.1 · Active July 27, 2026 — authority lives in ARCHITECTURE.md v1.3.12 and DESIGN.md v0.3.2. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
+> **Status:** Complete
+>
+> **Completed:** August 7, 2026
+>
+> **Milestone commit:** `5c96c57`
+>
+> **Outcome:** Passed with measured limitations carried into implementation
+>
+> **Learnings:** ADR-122, ADR-127, ADR-138, ADR-139, ADR-140, ADR-141
+
 ---
 
 ## Milestone (the only definition of done)
@@ -36,9 +46,9 @@ Spike code is disposable and must remain clearly separated from production code.
 - [x] The invitation/revocation sequence identifies the enforcement boundary and failure behavior without prematurely fixing the domain schema. Evidence: `docs/spikes/phase-0b/invitation-revocation.md` and `apps/api/test/auth-membership-boundary.test.ts`.
 - [x] The complete subtitle matrix records browser, file/track type, result, duration, available memory observations, cancellation/recovery behavior, and upload impact. Completed August 6, 2026; unavailable standard memory APIs remain explicit limitations rather than zero measurements.
 - [x] The written subtitle conclusion selects embedded-text extraction for supported desktop browser uploads, with sidecar/manual fallback and all format, mobile and measurement limits preserved.
-- [ ] Bunny duplicate-caption, caption-mutation, region, and encoding-size questions have measured or provider-confirmed answers.
+- [x] Bunny duplicate-caption, caption-mutation, region, and encoding-size questions have measured or provider-confirmed answers.
 - [x] ADR-122 and ADR-127 are accepted from evidence; related §13 gates are closed or explicitly carried as later implementation/pre-launch gates.
-- [ ] No spike secret, token, media file, production dependency, or irreversible provider setting enters git.
+- [x] No spike secret, token, media file, production dependency, or irreversible provider setting enters git.
 
 ## Operator prerequisites
 
