@@ -1,6 +1,6 @@
 # Phase 1 Brief — First light
 
-*Project Laya · Brief v0.1 · Active August 7, 2026 — authority lives in ARCHITECTURE.md v1.3.13 and DESIGN.md v0.3.2. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
+*Project Laya · Brief v0.2 · Active August 8, 2026 — authority lives in ARCHITECTURE.md v1.3.14 and DESIGN.md v0.3.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
 ---
 
@@ -16,10 +16,10 @@ the catalog or polished-experience phase.
 
 Read ARCHITECTURE.md §2, §3.2–§3.4, §4.0–§4.3, §6, §7, §8, §12, and
 ADR-108, ADR-110, ADR-118, ADR-121, ADR-122, ADR-124, ADR-125, ADR-127–ADR-132,
-ADR-137–ADR-141 before writing code. Read DESIGN.md §3, §5, §7, §9, and §13
-for the accessibility, token, and invite-flow constraints. Verify current Clerk,
-Bunny, Cloudflare, and library documentation at implementation time; Phase 0B
-evidence does not freeze provider SDK versions.
+ADR-137–ADR-143 before writing code. Read DESIGN.md §3, §5, §7, §9, §13, and
+§14.1 for the accessibility, token, invite-flow and sanitized-evidence
+constraints. Verify current Clerk, Bunny, Cloudflare, and library documentation
+at implementation time; Phase 0B evidence does not freeze provider SDK versions.
 
 ## In scope
 
@@ -33,7 +33,8 @@ evidence does not freeze provider SDK versions.
    profile, authentication-identity, library, and membership records required
    by the Phase 0B invitation/revocation contract. Invitations are one-time,
    hashed, email-bound, expiring, and revocable. Authorization resolves Clerk
-   `(issuer, subject)` to an internal profile and active library membership.
+   `(issuer, subject)` to one internal viewer profile and active membership in
+   the shared MVP library (ADR-143). There is no household profile selector.
 3. **Minimal first-light schema.** Add only the tables and indexes exercised by
    this slice: identity/invitations/membership, one movie title and stable
    playable, video asset, upload state, subtitle tracks, playback sessions,
@@ -75,9 +76,12 @@ evidence does not freeze provider SDK versions.
    Playwright coverage for invite/login, upload readiness, playback, subtitle
    selection, and progress restore. Preserve typecheck, lint, format, migration,
    unit, integration, build, and deployment gates.
-10. **Operations.** Emit structured request/provider-transition logs without
+10. **Operations and evidence.** Emit structured request/provider-transition logs without
     tokens or signed URLs. Surface retryable versus terminal upload/playback
     failures, actual Bunny stored bytes, and actionable webhook/caption errors.
+    Capture a concise sanitized Phase 1 case-study record under
+    `docs/case-study/` using synthetic or redacted artifacts; this documentation
+    work does not authorize the public showcase or any additional product UI.
 
 ## Explicitly out of scope — do not build, even partially
 
@@ -91,6 +95,8 @@ evidence does not freeze provider SDK versions.
   integration (Phase 5).
 - Recommendations, analytics, transcription, OCR, premium encoding, D1 read
   replication, or Bunny storage replication (Phase 6 or trigger-gated ADRs).
+- A runnable public portfolio showcase, demo environment, production-data
+  mirror, or showcase-only application behavior (post-MVP under ADR-142).
 - A fourth workspace package, ORM, direct client D1 access, media through the
   Worker, committed secrets, or committed original media.
 
@@ -121,6 +127,8 @@ evidence does not freeze provider SDK versions.
       secret-scan, and environment-isolation checks pass in CI.
 - [ ] No disposable credential, token, provider identifier, signed URL, or
       original media enters git or logs.
+- [ ] The Phase 1 case-study note records the problem, constraints, alternatives,
+      evidence, outcome and lesson using only synthetic or redacted artifacts.
 
 ## Human/operator prerequisites
 

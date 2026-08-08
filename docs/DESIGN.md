@@ -1,6 +1,6 @@
 # Project Laya — Design Program
 
-*Private streaming platform · Design plan v0.3.2 · August 2026 · Project Laya · Authority: ARCHITECTURE.md v1.3.12*
+*Private streaming platform · Design plan v0.3.3 · August 2026 · Project Laya · Authority: ARCHITECTURE.md v1.3.14*
 
 ---
 
@@ -8,7 +8,7 @@
 
 This document answers one question: **what do I design, in what order, and how do I know when a phase is done?** It is the design counterpart to the architecture document and shares its sequencing, because design that runs on a different rhythm from engineering produces beautiful screens nobody can build and built screens nobody designed.
 
-**Verification status.** The technical constraints below are grounded in the verified decisions of ARCHITECTURE.md v1.3.12 — see its ADR register, especially ADR-121 (stable playables), ADR-122 (desktop-browser embedded-text extraction accepted with sidecar/manual fallback), ADR-126/127 (D1; Clerk authentication selected), and ADR-133 (lean catalog surface). Two of them shape design scope materially:
+**Verification status.** The technical constraints below are grounded in the verified decisions of ARCHITECTURE.md v1.3.14 — see its ADR register, especially ADR-121 (stable playables), ADR-122 (desktop-browser embedded-text extraction accepted with sidecar/manual fallback), ADR-126/127 (D1; Clerk authentication selected), and ADR-133 (lean catalog surface). Two of them shape design scope materially:
 
 1. **Quality is sometimes a visible user choice** (per ADR-104). The platform (Bunny Stream) provides silent adaptive HLS, but constrained connections — the Philippines case — still warrant explicit control: a "Data saver / quality" preference (Design Phase 2) and a quality control in the player (Design Phase 1), plus a per-download quality choice on mobile.
 
@@ -47,6 +47,12 @@ These come from the architecture and are non-negotiable inputs, not preferences.
 **Metadata comes from TMDB and will sometimes be wrong or missing**, especially for obscure titles, foreign films, or anything a friend uploads with a messy filename. Design for the broken-poster case as a first-class state, not an afterthought.
 
 **One person builds all of this in evenings.** Every component designed is a component that must be built, tested, and maintained by the same person who designed it. Ruthless economy is a design virtue here, not a compromise.
+
+**One shared library, personal viewing state.** Every invited member enters the
+same contributed catalog. Who shared a title remains visible provenance, while
+progress, history, preferences and recommendation inputs belong to the signed-in
+person. The MVP has one viewer profile per account and no household profile
+picker (ADR-143).
 
 ---
 
@@ -201,6 +207,22 @@ Given the verified finding that official iOS clients don't reliably do downloads
 ## 14. Research and validation plan
 
 Ten users is a luxury, not a limitation — it's a full-population research pool. Three moments matter: a concept check after D0 (show two visual directions, pick one), moderated usability tests with five people after D1 (the only formal testing this product needs), and an upload-flow test with three contributors after D3, watching them upload a real file without help. Everything else is continuous: they're your friends, and they'll tell you.
+
+### 14.1 Portfolio case-study evidence
+
+The case study is captured while decisions are fresh, not reconstructed after
+launch. At each design or engineering milestone, record the problem, relevant
+constraints, alternatives considered, decision, evidence, outcome and lesson
+using `docs/case-study/README.md`. Preserve useful artifacts such as synthetic
+state matrices, accessibility checks, architecture diagrams, measured results
+and before/after comparisons.
+
+Portfolio evidence never contains private names or email addresses, secrets,
+tokens, provider identifiers, signed URLs, local media filenames, production
+screenshots with personal data, or media without publication rights. Use
+synthetic fixtures for screenshots and prototypes. Evidence capture must not
+invent extra product work or weaken a phase's definition of done; the runnable
+public showcase remains a separate post-MVP artifact under ADR-142.
 
 ---
 
