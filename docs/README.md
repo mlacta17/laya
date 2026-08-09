@@ -16,6 +16,13 @@ The master documents remain authoritative over everything, including briefs. But
 portfolio case study over time. It is an evidence index and template, not a
 public showcase or another application environment.
 
+## Non-authoritative discovery material
+
+`PRODUCT-OPPORTUNITIES.md` records unvalidated product hypotheses, comparative
+fit and feasibility scores, and the evidence required before any idea can enter
+the roadmap. It never overrides `ARCHITECTURE.md`, `DESIGN.md` or an active phase
+brief, and reading it is not required for scoped implementation work.
+
 ## Current phase evidence
 
 Phase 0B observations and go/no-go results live in
