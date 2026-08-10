@@ -1,6 +1,8 @@
 import { createMiddleware } from "hono/factory";
 import { beforeEach, describe, expect, it } from "vitest";
+import { isRetryable } from "@laya/shared";
 import { requireAuth } from "../src/auth/require-auth";
+import { errorResponse } from "../src/errors";
 import type { AppEnv } from "../src/types";
 import {
   MOCK_AUDIENCE,
@@ -28,19 +30,9 @@ const requireTestMembership = createMiddleware<AppEnv>(async (c, next) => {
   const profileId = profileIdByIdentity.get(identityKey(issuer, subject));
 
   if (!profileId || !activeMemberships.has(profileId)) {
-    // `forbidden` is intentionally local to this Phase 0B model. The shared
-    // production error vocabulary does not gain a new code until Phase 1
-    // accepts the authenticated-authorization convention.
-    return c.json(
-      {
-        error: {
-          code: "forbidden",
-          message: "Access denied",
-          requestId: c.get("requestId"),
-        },
-      },
-      403,
-    );
+    // ADR-144: `forbidden` is the accepted shared code for a verified
+    // identity without active Laya membership or the necessary role.
+    return errorResponse(c, 403, "forbidden", "Access denied");
   }
 
   await next();
@@ -81,6 +73,9 @@ async function expectForbidden(response: Response): Promise<void> {
       message: "Access denied",
     },
   });
+  // ADR-144: a permission denial is terminal for the caller — retrying the
+  // same request cannot succeed until an operator changes their membership.
+  expect(isRetryable("forbidden")).toBe(false);
 }
 
 describe("provider identity versus Laya membership boundary", () => {

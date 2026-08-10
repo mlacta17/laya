@@ -142,6 +142,7 @@ describe("error envelope", () => {
     expect(ERROR_CODES.map((code) => [code, isRetryable(code)])).toEqual([
       ["invalid_request", false],
       ["unauthorized", false],
+      ["forbidden", false],
       ["not_found", false],
       ["payload_too_large", false],
       ["internal", true],
