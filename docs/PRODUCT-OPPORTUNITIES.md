@@ -53,12 +53,13 @@ does not override the roadmap.
 | 2 | Pass It On | Captured | 5 | 4 | 20 | Test after the core title experience exists |
 | 3 | My Shelf | Captured | 4 | 4 | 16 | Lightweight identity and curation experiment |
 | 4 | Rewatch Reflection | Captured | 4 | 4 | 16 | Build only after ratings/history are real |
-| 5 | Post-Watch Circle | Captured | 5 | 3 | 15 | Start with one note per viewer; no threads |
-| 6 | Timed Circle Reactions | Captured | 5 | 2 | 10 | High differentiation; prototype before schema work |
-| 7 | Movie Night Match | Captured | 4 | 2 | 8 | Useful but crowded concept space; validate demand |
-| 8 | Finite Discovery Feed | Captured | 3 | 2 | 6 | Explore only with existing, reviewed clips |
-| 9 | Scene Exchange | Captured | 4 | 1 | 4 | Rights and derived-media lifecycle need a spike |
-| 10 | Laya Cuts | Captured | 3 | 1 | 3 | Ambitious experiment; do not automate first |
+| 5 | Taste Ladder | Captured | 5 | 3 | 15 | Test relative ranking against ordinary ratings |
+| 6 | Post-Watch Circle | Captured | 5 | 3 | 15 | Start with one note per viewer; no threads |
+| 7 | Movie Night Match | Captured | 5 | 3 | 15 | Test a finite, asynchronous two-person session |
+| 8 | Timed Circle Reactions | Captured | 5 | 2 | 10 | High differentiation; prototype before schema work |
+| 9 | Finite Discovery Feed | Captured | 3 | 2 | 6 | Explore only with existing, reviewed clips |
+| 10 | Scene Exchange | Captured | 4 | 1 | 4 | Rights and derived-media lifecycle need a spike |
+| 11 | Laya Cuts | Captured | 3 | 1 | 3 | Ambitious experiment; do not automate first |
 
 Ties are ordered by the amount of new product and moderation surface they
 introduce. The register prioritizes finishing Laya's core over implementing any
@@ -192,20 +193,25 @@ spoiler rules and behavior when media duration changes.
 
 ### OPP-007 · Movie Night Match
 
-**Observation:** Groups spend time negotiating what to watch even when every
-option is already available.
+**Observation:** Two people can spend more time negotiating what to watch than
+watching, even when every option is already available to both of them.
 
-**Hypothesis:** Private voting over the actual Laya catalog can reach a decision
-faster by incorporating history, runtime, subtitle availability and readiness.
+**Hypothesis:** A private, asynchronous session in which each person marks a
+finite deck as love, maybe or reject will expose mutual choices faster than
+open-ended browsing.
 
-**Smallest test:** Give a group a fixed deck and reveal titles accepted by all
-participants. Do not build real-time rooms or chat.
+**Smallest test:** Let one person invite one other member to a fixed deck from
+the ready Laya catalog. Each participant can choose love, maybe or reject using
+accessible controls; reveal mutual loves first and mutual maybes only when no
+love matches exist. Do not build real-time rooms, chat or a watch party.
 
-**Success signal:** The group chooses faster and accepts the result without
-returning to open-ended browsing.
+**Success signal:** The pair reaches an acceptable choice faster, understands
+the three response states and does not need to return to open-ended browsing.
 
-**Risks:** The swipe-to-match pattern is already common, unanimous matching may
-fail, and scheduling/group state can exceed the value delivered.
+**Risks:** The swipe-to-match pattern is already common, a session may produce
+no match, gestures can exclude keyboard or assistive-technology users, and
+session/invitation state can exceed the value delivered. Buttons remain the
+semantic controls even if gestures are offered.
 
 **Earliest eligibility:** After the catalog and individual history are stable.
 It remains separate from the explicitly deferred watch-party feature.
@@ -277,6 +283,39 @@ vertical feed is not differentiated by itself.
 new ADR and a time-boxed provider/processing spike before any production design
 or implementation.
 
+### OPP-011 · Taste Ladder
+
+**Observation:** People apply star scales inconsistently, while comparing a new
+favorite with something they already know can produce a more meaningful account
+of personal taste.
+
+**Hypothesis:** A few relative comparisons after watching will place a title in
+an evolving personal ranking that feels more accurate and useful than an
+isolated numeric rating. Personal rankings may later provide honest inputs for
+shared selection and explainable recommendations.
+
+**Smallest test:** After a participant reacts to a movie, ask whether it belongs
+above or below two or three previously watched movies with nearby reactions.
+Show the resulting personal list and compare its perceived accuracy, effort and
+usefulness with a conventional five-star flow. Make ranking optional and
+skippable.
+
+**Success signal:** Participants complete placement in under 30 seconds, say the
+result reflects their taste, and can use the list to explain or make a later
+choice. Evidence must show value beyond the novelty of ranking.
+
+**Risks:** Repeated comparisons can become tedious; recency, mood and social
+pressure can distort results; unlike titles can feel impossible to compare; and
+a ten-person circle produces sparse aggregate data. Movies and series should
+not share one ladder, ties or “too different to compare” may be necessary, and
+any circle ranking must disclose its participant count rather than imply broad
+consensus.
+
+**Earliest eligibility:** Research may begin after ratings and real watch
+history exist. Relative-placement semantics, edit history, group aggregation
+and recommendation use require an ADR before implementation; the existing
+`ratings` concept does not pre-decide this model.
+
 ## 5. Research sequence
 
 Do not test all opportunities at once. Use this order unless new evidence
@@ -287,8 +326,10 @@ changes it:
 2. Test **Pass It On** and **Post-Watch Circle** as low-fidelity flows after the
    title experience exists.
 3. Prototype **Timed Circle Reactions** to assess presence versus distraction.
-4. Evaluate **Movie Night Match**, **My Shelf** and **Rewatch Reflection** only
-   when the data they depend on is real.
+4. Compare **Taste Ladder** with ordinary ratings, then evaluate **Movie Night
+   Match**, **My Shelf** and **Rewatch Reflection** only when the data they
+   depend on is real. Test ranking and matching separately before testing
+   whether one should inform the other.
 5. Use openly licensed media to test **Finite Discovery Feed**, **Scene
    Exchange** and **Laya Cuts** without building an automated pipeline.
 
@@ -326,6 +367,11 @@ research because products and policies change.
   shows and episodes.
 - [WatchWatch](https://www.watchwatch.tv/) preserves a recommendation from one
   person through selection and a response after watching.
+- [Beli](https://apps.apple.com/us/app/beli/id1478375386) organizes personal
+  restaurant rankings and exposes taste profiles and friend match scores.
+- [Apple's Beli feature](https://apps.apple.com/us/ipad/story/id1847489749)
+  describes its relative-comparison interaction: a newly visited restaurant is
+  compared with restaurants the person has already tried.
 - [Viki Timed Comments](https://support.viki.com/hc/en-us/articles/360009409194-What-are-Timed-Comments)
   attaches discussion to playback moments and lets viewers disable it.
 - [Netflix Moments](https://help.netflix.com/en/node/210664027435620) lets a
