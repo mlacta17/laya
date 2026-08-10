@@ -5,6 +5,7 @@ import { requestId } from "hono/request-id";
 import type { MiddlewareHandler } from "hono/types";
 import type { ValidatedEnv } from "./env";
 import { errorResponse } from "./errors";
+import { logError, serializeError } from "./log";
 import { devJwks } from "./routes/dev-jwks";
 import { health } from "./routes/health";
 import type { AppEnv } from "./types";
@@ -80,14 +81,9 @@ export function createApp(resolveConfig: ConfigResolver): Hono<AppEnv> {
   app.notFound((c) => errorResponse(c, 404, "not_found", "Route not found"));
 
   app.onError((err, c) => {
-    console.error({
-      event: "unhandled_request_error",
+    logError("unhandled_request_error", {
       requestId: c.get("requestId"),
-      error: {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-      },
+      error: serializeError(err),
     });
     return errorResponse(c, 500, "internal", "Internal error");
   });

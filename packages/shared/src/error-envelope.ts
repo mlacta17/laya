@@ -6,6 +6,7 @@ import { z } from "zod";
 export const ERROR_CODES = [
   "invalid_request",
   "unauthorized",
+  "forbidden",
   "not_found",
   "payload_too_large",
   "internal",
@@ -13,9 +14,16 @@ export const ERROR_CODES = [
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
+// ADR-144 boundary between the two auth codes: `unauthorized` (401) means
+// authentication failed — the caller's identity was never established.
+// `forbidden` (403) means a verified identity lacks Laya permission for the
+// operation (no active membership, missing role). Where acknowledging that a
+// resource even exists would leak information — unknown invitation tokens,
+// operator-only routes probed by non-operators — respond `not_found` instead.
 const RETRYABLE_BY_ERROR_CODE = {
   invalid_request: false,
   unauthorized: false,
+  forbidden: false,
   not_found: false,
   payload_too_large: false,
   internal: true,
