@@ -5,28 +5,48 @@
 //
 // NEVER pass tokens, Authorization headers, signed URLs, or provider secrets
 // in `fields` — sanitize at the call site (§8.1, NFR-5). This module stays
-// framework-free on purpose: webhook handlers and startup code can use it
-// without a Hono context.
+// framework-free on purpose: webhook handlers can use it without a Hono
+// context.
 
-type LogFields = { requestId: string } & Record<string, unknown>;
+type LogFields = {
+  requestId: string;
+  // The positional argument is the only source of the event name. Keeping it
+  // out of fields prevents accidental query-key changes at new call sites.
+  event?: never;
+} & Record<string, unknown>;
 
 export function logWarn(event: string, fields: LogFields): void {
-  console.warn({ event, ...fields });
+  // Write the canonical event last as a runtime backstop for untyped callers.
+  console.warn({ ...fields, event });
 }
 
 export function logError(event: string, fields: LogFields): void {
-  console.error({ event, ...fields });
+  console.error({ ...fields, event });
 }
 
-// One standard shape for thrown values, whatever was actually thrown. Keeps
-// `error.name` queryable even when a library throws a string or plain object.
-export function serializeError(err: unknown): {
-  name: string;
-  message: string;
-  stack?: string;
-} {
-  if (err instanceof Error) {
-    return { name: err.name, message: err.message, stack: err.stack };
+const SAFE_ERROR_NAMES = new Set([
+  "Error",
+  "AggregateError",
+  "EvalError",
+  "RangeError",
+  "ReferenceError",
+  "SyntaxError",
+  "TypeError",
+  "URIError",
+]);
+
+// Arbitrary library errors may embed tokens, signed URLs, headers, response
+// bodies, or local paths in their message and stack. The safe default records
+// only a normalized class for grouping. Callers may add separately reviewed
+// operational detail as an explicit field; never pass raw thrown values.
+export function serializeError(err: unknown): { name: string } {
+  if (!(err instanceof Error)) {
+    return { name: "NonError" };
   }
-  return { name: "NonError", message: String(err) };
+
+  return {
+    // Use a fixed allowlist rather than a character pattern: an API key can be
+    // perfectly alphanumeric and some libraries allow callers to set `name`.
+    name: SAFE_ERROR_NAMES.has(err.name) ? err.name : "Error",
+  };
 }

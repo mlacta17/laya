@@ -1,6 +1,6 @@
 # Phase 1 Brief — First light
 
-*Project Laya · Brief v0.2 · Active August 8, 2026 — authority lives in ARCHITECTURE.md v1.3.14 and DESIGN.md v0.3.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
+*Project Laya · Brief v0.3 · Active August 9, 2026 — authority lives in ARCHITECTURE.md v1.3.15 and DESIGN.md v0.3.3. If this brief and ARCHITECTURE.md disagree, ARCHITECTURE.md wins and this brief has a bug.*
 
 ---
 
@@ -16,7 +16,7 @@ the catalog or polished-experience phase.
 
 Read ARCHITECTURE.md §2, §3.2–§3.4, §4.0–§4.3, §6, §7, §8, §12, and
 ADR-108, ADR-110, ADR-118, ADR-121, ADR-122, ADR-124, ADR-125, ADR-127–ADR-132,
-ADR-137–ADR-143 before writing code. Read DESIGN.md §3, §5, §7, §9, §13, and
+ADR-137–ADR-144 before writing code. Read DESIGN.md §3, §5, §7, §9, §13, and
 §14.1 for the accessibility, token, invite-flow and sanitized-evidence
 constraints. Verify current Clerk, Bunny, Cloudflare, and library documentation
 at implementation time; Phase 0B evidence does not freeze provider SDK versions.
