@@ -1,6 +1,7 @@
 import { createMiddleware } from "hono/factory";
 import type { Context } from "hono";
 import { errorResponse } from "../errors";
+import { logWarn } from "../log";
 import type { AppEnv } from "../types";
 import { getAuthConfig } from "./config";
 import { JwksFetchError } from "./jwks";
@@ -48,8 +49,7 @@ export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
 });
 
 function unauthorized(c: Context<AppEnv>, reason: string, detail?: string) {
-  console.warn({
-    event: "auth_rejected",
+  logWarn("auth_rejected", {
     requestId: c.get("requestId"),
     reason,
     ...(detail !== undefined && { detail }),
